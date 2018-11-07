@@ -52,6 +52,7 @@ _readdir(const Branches        &branches_,
   HashSet names;
   string basepath;
   struct stat st = {0};
+  enum fuse_fill_dir_flags fill_flags;
 
   for(size_t i = 0, ei = branches_.size(); i != ei; i++)
     {
@@ -82,7 +83,7 @@ _readdir(const Branches        &branches_,
 
           fs::inode::recompute(st);
 
-          rv = filler(buf,de->d_name,&st,NO_OFFSET);
+          rv = filler(buf,de->d_name,&st,NO_OFFSET,fill_flags);
           if(rv)
             return (fs::closedir(dh),-ENOMEM);
         }
@@ -115,5 +116,22 @@ namespace mergerfs
                         buf,
                         filler);
     }
+
+    int
+    readdir(const char *fusepath,
+            void *buf,
+            fuse_fill_dir_t filler,
+            off_t offset,
+            struct fuse_file_info *fi,
+            enum fuse_readdir_flags flags)
+    {
+      return readdir(fusepath,
+                     buf,
+                     filler,
+                     offset,
+                     fi);
+                     
+    }
+    
   }
 }

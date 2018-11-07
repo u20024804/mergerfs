@@ -42,8 +42,8 @@ INTERNAL_FUSE = 1
 EXTERNAL_FUSE_MIN_REQ = 2.9.7
 
 ifeq ($(INTERNAL_FUSE),1)
-FUSE_CFLAGS = -D_FILE_OFFSET_BITS=64 -Ilibfuse/include
-FUSE_LIBS   = libfuse/lib/.libs/libfuse.a
+FUSE_CFLAGS = -D_FILE_OFFSET_BITS=64 -Ilibfuse3/include
+FUSE_LIBS   = libfuse3/obj/libfuse3.a
 FUSE_TARGET = $(FUSE_LIBS)
 else
 FUSE_CFLAGS := $(shell $(PKGCONFIG) --cflags 'fuse >= $(EXTERNAL_FUSE_MIN_REQ)')
@@ -80,7 +80,7 @@ CXXFLAGS    = $(OPTS) \
               -Wall \
 	      -Wno-unused-result \
               $(FUSE_CFLAGS) \
-              -DFUSE_USE_VERSION=29 \
+              -DFUSE_USE_VERSION=32 \
               -MMD \
 	      -DUSE_XATTR=$(USE_XATTR) \
 	      -DUGID_USE_RWLOCK=$(UGID_USE_RWLOCK)
