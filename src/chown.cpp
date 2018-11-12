@@ -92,9 +92,10 @@ namespace mergerfs
   namespace fuse
   {
     int
-    chown(const char *fusepath,
-          uid_t       uid,
-          gid_t       gid)
+    chown(const char     *fusepath,
+          uid_t           uid,
+          gid_t           gid,
+          fuse_file_info *fii)
     {
       const fuse_context      *fc     = fuse_get_context();
       const Config            &config = Config::get(fc);

@@ -16,12 +16,15 @@
 
 #pragma once
 
+#include <fuse.h>
+
 namespace mergerfs
 {
   namespace fuse
   {
     int
-    chmod(const char *fusepath,
-          mode_t      mode);
+    chmod(const char     *fusepath,
+          mode_t          mode,
+          fuse_file_info *ffi);
   }
 }

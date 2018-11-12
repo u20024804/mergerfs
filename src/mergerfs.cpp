@@ -73,9 +73,9 @@ namespace local
                       const bool              direct_io,
                       const bool              nullrw)
   {
-    ops.flag_nullpath_ok   = true;
-    ops.flag_nopath        = true;
-    ops.flag_utime_omit_ok = true;
+    //ops.flag_nullpath_ok   = true;
+    //ops.flag_nopath        = true;
+    //ops.flag_utime_omit_ok = true;
 
     ops.access      = mergerfs::fuse::access;
     ops.bmap        = NULL;
@@ -84,12 +84,12 @@ namespace local
     ops.create      = mergerfs::fuse::create;
     ops.destroy     = mergerfs::fuse::destroy;
     ops.fallocate   = mergerfs::fuse::fallocate;
-    ops.fgetattr    = mergerfs::fuse::fgetattr;
+    //ops.fgetattr    = mergerfs::fuse::fgetattr;
     ops.flock       = mergerfs::fuse::flock;
     ops.flush       = mergerfs::fuse::flush;
     ops.fsync       = mergerfs::fuse::fsync;
     ops.fsyncdir    = mergerfs::fuse::fsyncdir;
-    ops.ftruncate   = mergerfs::fuse::ftruncate;
+    //ops.ftruncate   = mergerfs::fuse::ftruncate;
     ops.getattr     = mergerfs::fuse::getattr;
     ops.getdir      = NULL;       /* deprecated; use readdir */
     ops.getxattr    = mergerfs::fuse::getxattr;

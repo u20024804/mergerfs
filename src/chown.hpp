@@ -16,13 +16,16 @@
 
 #pragma once
 
+#include <fuse.h>
+
 namespace mergerfs
 {
   namespace fuse
   {
     int
-    chown(const char *fusepath,
-          uid_t       uid,
-          gid_t       gid);
+    chown(const char     *fusepath,
+          uid_t           uid,
+          gid_t           gid,
+          fuse_file_info *fii);
   }
 }

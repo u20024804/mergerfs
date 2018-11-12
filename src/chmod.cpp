@@ -88,8 +88,9 @@ namespace mergerfs
   namespace fuse
   {
     int
-    chmod(const char *fusepath,
-          mode_t      mode)
+    chmod(const char     *fusepath,
+          mode_t          mode,
+          fuse_file_info *ffi)
     {
       const fuse_context      *fc     = fuse_get_context();
       const Config            &config = Config::get(fc);
