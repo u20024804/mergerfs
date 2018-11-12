@@ -91,7 +91,7 @@ namespace local
     ops.fsyncdir    = mergerfs::fuse::fsyncdir;
     //ops.ftruncate   = mergerfs::fuse::ftruncate;
     ops.getattr     = mergerfs::fuse::getattr;
-    ops.getdir      = NULL;       /* deprecated; use readdir */
+    //ops.getdir      = NULL;       /* deprecated; use readdir */
     ops.getxattr    = mergerfs::fuse::getxattr;
     ops.init        = mergerfs::fuse::init;
     ops.ioctl       = mergerfs::fuse::ioctl;
@@ -123,7 +123,7 @@ namespace local
     ops.symlink     = mergerfs::fuse::symlink;
     ops.truncate    = mergerfs::fuse::truncate;
     ops.unlink      = mergerfs::fuse::unlink;
-    ops.utime       = NULL;       /* deprecated; use utimens() */
+    //ops.utime       = NULL;       /* deprecated; use utimens() */
     ops.utimens     = mergerfs::fuse::utimens;
     ops.write       = (nullrw ?
                        mergerfs::fuse::write_null :

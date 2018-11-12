@@ -25,7 +25,8 @@ namespace mergerfs
   namespace fuse
   {
     int
-    getattr(const char  *fusepath,
-            struct stat *buf);
+    getattr(const char     *fusepath,
+            struct stat    *buf,
+            fuse_file_info *ffi);
   }
 }

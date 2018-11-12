@@ -24,7 +24,8 @@ namespace mergerfs
   namespace fuse
   {
     void *
-    init(fuse_conn_info *conn)
+    init(fuse_conn_info *conn,
+         fuse_config    *config)
     {
       ugid::init();
 

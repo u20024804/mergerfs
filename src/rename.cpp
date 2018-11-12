@@ -275,8 +275,9 @@ namespace mergerfs
   namespace fuse
   {
     int
-    rename(const char *oldpath,
-           const char *newpath)
+    rename(const char   *oldpath,
+           const char   *newpath,
+           unsigned int  flags)
     {
       const fuse_context      *fc     = fuse_get_context();
       const Config            &config = Config::get(fc);

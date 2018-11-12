@@ -91,7 +91,8 @@ namespace mergerfs
   {
     int
     utimens(const char     *fusepath,
-            const timespec  ts[2])
+            const timespec  ts[2],
+            fuse_file_info *ffi)
     {
       const fuse_context      *fc     = fuse_get_context();
       const Config            &config = Config::get(fc);

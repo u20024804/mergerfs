@@ -94,8 +94,9 @@ namespace mergerfs
   namespace fuse
   {
     int
-    getattr(const char  *fusepath,
-            struct stat *st)
+    getattr(const char     *fusepath,
+            struct stat    *st,
+            fuse_file_info *ffi)
     {
       const fuse_context *fc     = fuse_get_context();
       const Config       &config = Config::get(fc);

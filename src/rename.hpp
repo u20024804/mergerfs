@@ -21,7 +21,8 @@ namespace mergerfs
   namespace fuse
   {
     int
-    rename(const char *from,
-           const char *to);
+    rename(const char   *from,
+           const char   *to,
+           unsigned int  flags);
   }
 }

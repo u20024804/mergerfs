@@ -23,7 +23,8 @@ namespace mergerfs
   namespace fuse
   {
     int
-    truncate(const char *fusepath,
-             off_t       size);
+    truncate(const char     *fusepath,
+             off_t           size,
+             fuse_file_info *ffi);
   }
 }

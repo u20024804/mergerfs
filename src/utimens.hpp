@@ -22,6 +22,7 @@ namespace mergerfs
   {
     int
     utimens(const char     *fusepath,
-            const timespec  ts[2]);
+            const timespec  ts[2],
+            fuse_file_info *ffi);
   }
 }
