@@ -39,7 +39,7 @@ endif
 USE_XATTR = 1
 
 INTERNAL_FUSE = 1
-EXTERNAL_FUSE_MIN_REQ = 2.9.7
+EXTERNAL_FUSE_MIN_REQ = 3.3.0
 
 ifeq ($(INTERNAL_FUSE),1)
 FUSE_CFLAGS = -D_FILE_OFFSET_BITS=64 -Ilibfuse3/include
@@ -137,18 +137,18 @@ obj/obj-stamp:
 obj/%.o: src/%.cpp
 	$(CXX) $(CXXFLAGS) $(CPPFLAGS) -c $< -o $@
 
-clean: rpm-clean libfuse_Makefile
+clean: rpm-clean
 	$(RM) -f src/version.hpp
 	$(RM) -rf obj
 	$(RM) -f "$(TARGET)" mount.mergerfs
 	$(FIND) . -name "*~" -delete
 ifeq ($(INTERNAL_FUSE),1)
-	cd libfuse && $(MAKE) clean
+	cd libfuse3 && $(MAKE) clean
 endif
 
-distclean: clean libfuse_Makefile
+distclean: clean
 ifeq ($(INTERNAL_FUSE),1)
-	cd libfuse && $(MAKE) distclean
+	cd libfuse3 && $(MAKE) distclean
 endif
 ifeq ($(GIT_REPO),1)
 	$(GIT) clean -fd
@@ -236,19 +236,10 @@ install-build-pkgs:
 	tools/install-build-pkgs
 
 unexport CFLAGS
-.PHONY: libfuse_Makefile
-libfuse_Makefile:
-ifeq ($(INTERNAL_FUSE),1)
-ifeq ($(shell test -e libfuse/Makefile; echo $$?),1)
-	cd libfuse && \
-	$(MKDIR) -p m4 && \
-	autoreconf --force --install && \
-        ./configure --enable-lib --disable-util --disable-example
-endif
-endif
+.PHONY:
 
-libfuse/lib/.libs/libfuse.a: libfuse_Makefile
-	cd libfuse && $(MAKE)
+libfuse3/obj/libfuse3.a:
+	cd libfuse3 && $(MAKE)
 
 .PHONY: all clean install help version
 
