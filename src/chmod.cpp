@@ -127,21 +127,21 @@ namespace mergerfs
   namespace fuse
   {
     int
-    chmod(const char     *fusepath,
-          mode_t          mode,
-          fuse_file_info *ffi)
+    chmod(const char     *fusepath_,
+          mode_t          mode_,
+          fuse_file_info *ffi_)
     {
       const fuse_context *fc     = fuse_get_context();
       const Config       &config = Config::get(fc);
 
-      if((fusepath == NULL) && (ffi != NULL))
-        return local::fchmod(ffi,mode);
+      if((fusepath_ == NULL) && (ffi_ != NULL))
+        return local::fchmod(ffi_,mode_);
 
       return local::chmod(fc->uid,
                           fc->gid,
                           &config,
-                          fusepath,
-                          mode);
+                          fusepath_,
+                          mode_);
     }
   }
 }
