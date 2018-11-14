@@ -29,10 +29,19 @@ namespace fs
   static
   inline
   int
+  chmod(const char *path_,
+        const mode_t mode_)
+  {
+    return ::chmod(path_,mode_);
+  }
+  
+  static
+  inline
+  int
   chmod(const std::string &path,
         const mode_t       mode)
   {
-    return ::chmod(path.c_str(),mode);
+    return fs::chmod(path.c_str(),mode);
   }
 
   static

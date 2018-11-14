@@ -14,73 +14,112 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#include <fuse.h>
-
-#include <string>
-#include <vector>
-
 #include "config.hpp"
 #include "errno.hpp"
+#include "fileinfo.hpp"
 #include "fs_base_chmod.hpp"
 #include "fs_path.hpp"
 #include "rv.hpp"
 #include "rwlock.hpp"
 #include "ugid.hpp"
 
+#include <fuse.h>
+
+#include <string>
+#include <vector>
+
 using std::string;
 using std::vector;
 using mergerfs::Policy;
+using mergerfs::Config;
+using mergerfs::rwlock::ReadGuard;
 
-static
-int
-_chmod_loop_core(const string *basepath,
-                 const char   *fusepath,
-                 const mode_t  mode,
-                 const int     error)
+namespace local
 {
-  int rv;
-  string fullpath;
+  static
+  int
+  chmod_loop_core(const string *basepath,
+                  const char   *fusepath,
+                  const mode_t  mode,
+                  const int     error)
+  {
+    int rv;
+    string fullpath;
 
-  fs::path::make(basepath,fusepath,fullpath);
+    fs::path::make(basepath,fusepath,fullpath);
 
-  rv = fs::chmod(fullpath,mode);
+    rv = fs::chmod(fullpath,mode);
 
-  return error::calc(rv,error,errno);
-}
+    return error::calc(rv,error,errno);
+  }
 
-static
-int
-_chmod_loop(const vector<const string*> &basepaths,
-            const char                  *fusepath,
-            const mode_t                 mode)
-{
-  int error;
+  static
+  int
+  chmod_loop(const vector<const string*> &basepaths,
+             const char                  *fusepath,
+             const mode_t                 mode)
+  {
+    int error;
 
-  error = -1;
-  for(size_t i = 0, ei = basepaths.size(); i != ei; i++)
-    {
-      error = _chmod_loop_core(basepaths[i],fusepath,mode,error);
-    }
+    error = -1;
+    for(size_t i = 0, ei = basepaths.size(); i != ei; i++)
+      {
+        error = local::chmod_loop_core(basepaths[i],fusepath,mode,error);
+      }
 
-  return -error;
-}
+    return -error;
+  }
 
-static
-int
-_chmod(Policy::Func::Action  actionFunc,
-       const Branches       &branches_,
-       const uint64_t        minfreespace,
-       const char           *fusepath,
-       const mode_t          mode)
-{
-  int rv;
-  vector<const string*> basepaths;
+  static
+  int
+  chmod(Policy::Func::Action  actionFunc,
+        const Branches       &branches_,
+        const uint64_t        minfreespace,
+        const char           *fusepath,
+        const mode_t          mode)
+  {
+    int rv;
+    vector<const string*> basepaths;
 
-  rv = actionFunc(branches_,fusepath,minfreespace,basepaths);
-  if(rv == -1)
-    return -errno;
+    rv = actionFunc(branches_,fusepath,minfreespace,basepaths);
+    if(rv == -1)
+      return -errno;
 
-  return _chmod_loop(basepaths,fusepath,mode);
+    return local::chmod_loop(basepaths,fusepath,mode);
+  }
+
+  static
+  int
+  chmod(const uid_t   uid_,
+        const gid_t   gid_,
+        const Config *config_,
+        const char   *fusepath_,
+        const mode_t  mode_)
+  {
+    const ugid::Set ugid(uid_,gid_);
+    const ReadGuard readlock(&config_->branches_lock);
+
+    return local::chmod(config_->chmod,
+                        config_->branches,
+                        config_->minfreespace,
+                        fusepath_,
+                        mode_);
+  }
+
+  static
+  int
+  fchmod(const fuse_file_info *ffi_,
+         const mode_t          mode_)
+  {
+    int rv;
+    FileInfo *fi;
+
+    fi = reinterpret_cast<FileInfo*>(ffi_->fh);
+
+    rv = fs::fchmod(fi->fd,mode_);
+
+    return ((rv == -1) ? -errno : 0);
+  }
 }
 
 namespace mergerfs
@@ -97,11 +136,14 @@ namespace mergerfs
       const ugid::Set          ugid(fc->uid,fc->gid);
       const rwlock::ReadGuard  readlock(&config.branches_lock);
 
-      return _chmod(config.chmod,
-                    config.branches,
-                    config.minfreespace,
-                    fusepath,
-                    mode);
+      if((fusepath == NULL) && (ffi != NULL))
+        return local::fchmod(ffi,mode);
+
+      return local::chmod(fc->uid,
+                          fc->gid,
+                          &config,
+                          fusepath,
+                          mode);
     }
   }
 }
