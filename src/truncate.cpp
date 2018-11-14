@@ -38,89 +38,92 @@ using mergerfs::Policy;
 using mergerfs::Config;
 using mergerfs::rwlock::ReadGuard;
 
-static
-int
-truncate_loop_core(const string *basepath_,
-                   const char   *fusepath_,
-                   const off_t   size_,
-                   const int     error_)
+namespace local
 {
-  int rv;
-  string fullpath;
+  static
+  int
+  truncate_loop_core(const string *basepath_,
+                     const char   *fusepath_,
+                     const off_t   size_,
+                     const int     error_)
+  {
+    int rv;
+    string fullpath;
 
-  fullpath = fs::path::make(basepath_,fusepath_);
+    fullpath = fs::path::make(basepath_,fusepath_);
 
-  rv = fs::truncate(fullpath,size_);
+    rv = fs::truncate(fullpath,size_);
 
-  return error::calc(rv,error_,errno);
-}
+    return error::calc(rv,error_,errno);
+  }
 
-static
-int
-truncate_loop(const vector<const string*> &basepaths,
-              const char                  *fusepath,
-              const off_t                  size)
-{
-  int error;
+  static
+  int
+  truncate_loop(const vector<const string*> &basepaths,
+                const char                  *fusepath,
+                const off_t                  size)
+  {
+    int error;
 
-  error = -1;
-  for(size_t i = 0, ei = basepaths.size(); i != ei; i++)
-    {
-      error = truncate_loop_core(basepaths[i],fusepath,size,error);
-    }
+    error = -1;
+    for(size_t i = 0, ei = basepaths.size(); i != ei; i++)
+      {
+        error = local::truncate_loop_core(basepaths[i],fusepath,size,error);
+      }
 
-  return -error;
-}
+    return -error;
+  }
 
-static
-int
-truncate(Policy::Func::Action  actionFunc,
-         const Branches       &branches_,
-         const uint64_t        minfreespace,
-         const char           *fusepath,
-         const off_t           size)
-{
-  int rv;
-  vector<const string*> basepaths;
+  static
+  int
+  truncate(Policy::Func::Action  actionFunc,
+           const Branches       &branches_,
+           const uint64_t        minfreespace,
+           const char           *fusepath,
+           const off_t           size)
+  {
+    int rv;
+    vector<const string*> basepaths;
 
-  rv = actionFunc(branches_,fusepath,minfreespace,basepaths);
-  if(rv == -1)
-    return -errno;
+    rv = actionFunc(branches_,fusepath,minfreespace,basepaths);
+    if(rv == -1)
+      return -errno;
 
-  return truncate_loop(basepaths,fusepath,size);
-}
+    return local::truncate_loop(basepaths,fusepath,size);
+  }
 
-static
-int
-truncate(const uid_t   uid_,
-         const gid_t   gid_,
-         const Config *config_,
-         const char   *fusepath_,
-         const off_t   size_)
-{
-  const ugid::Set ugid(uid_,gid_);
-  const ReadGuard readlock(&config_->branches_lock);
+  static
+  int
+  truncate(const uid_t   uid_,
+           const gid_t   gid_,
+           const Config *config_,
+           const char   *fusepath_,
+           const off_t   size_)
+  {
+    const ugid::Set ugid(uid_,gid_);
+    const ReadGuard readlock(&config_->branches_lock);
 
-  return truncate(config_->truncate,
-                  config_->branches,
-                  config_->minfreespace,
-                  fusepath_,
-                  size_);
-}
+    return local::truncate(config_->truncate,
+                           config_->branches,
+                           config_->minfreespace,
+                           fusepath_,
+                           size_);
+  }
 
-static
-int
-ftruncate(const fuse_file_info *ffi_,
-          const off_t           size_)
-{
-  int rv;
-  FileInfo *fi;
+  static
+  int
+  ftruncate(const fuse_file_info *ffi_,
+            const off_t           size_)
+  {
+    int rv;
+    FileInfo *fi;
 
-  fi = reinterpret_cast<FileInfo*>(ffi_->fh);
+    fi = reinterpret_cast<FileInfo*>(ffi_->fh);
 
-  rv = fs::ftruncate(fi->fd,size_);
+    rv = fs::ftruncate(fi->fd,size_);
 
-  return ((rv == -1) ? -errno : 0);
+    return ((rv == -1) ? -errno : 0);
+  }
 }
 
 namespace mergerfs
@@ -136,13 +139,13 @@ namespace mergerfs
       const Config       &config = Config::get(fc);
 
       if((fusepath == NULL) && (ffi != NULL))
-        return ::ftruncate(ffi,size);
+        return local::ftruncate(ffi,size);
 
-      return ::truncate(fc->uid,
-                        fc->gid,
-                        &config,
-                        fusepath,
-                        size);
+      return local::truncate(fc->uid,
+                             fc->gid,
+                             &config,
+                             fusepath,
+                             size);
     }
   }
 }
