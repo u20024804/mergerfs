@@ -31,7 +31,6 @@
 #include "create.hpp"
 #include "destroy.hpp"
 #include "fallocate.hpp"
-#include "fgetattr.hpp"
 #include "flock.hpp"
 #include "flush.hpp"
 #include "fsync.hpp"
