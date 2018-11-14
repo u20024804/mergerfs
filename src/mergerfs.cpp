@@ -35,7 +35,6 @@
 #include "flush.hpp"
 #include "fsync.hpp"
 #include "fsyncdir.hpp"
-#include "ftruncate.hpp"
 #include "getattr.hpp"
 #include "getxattr.hpp"
 #include "init.hpp"
