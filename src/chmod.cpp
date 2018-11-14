@@ -38,33 +38,33 @@ namespace local
 {
   static
   int
-  chmod_loop_core(const string *basepath,
-                  const char   *fusepath,
-                  const mode_t  mode,
-                  const int     error)
+  chmod_loop_core(const string *basepath_,
+                  const char   *fusepath_,
+                  const mode_t  mode_,
+                  const int     error_)
   {
     int rv;
     string fullpath;
 
-    fs::path::make(basepath,fusepath,fullpath);
+    fullpath = fs::path::make(basepath_,fusepath_);
 
-    rv = fs::chmod(fullpath,mode);
+    rv = fs::chmod(fullpath,mode_);
 
-    return error::calc(rv,error,errno);
+    return error::calc(rv,error_,errno);
   }
 
   static
   int
-  chmod_loop(const vector<const string*> &basepaths,
-             const char                  *fusepath,
-             const mode_t                 mode)
+  chmod_loop(const vector<const string*> &basepaths_,
+             const char                  *fusepath_,
+             const mode_t                 mode_)
   {
     int error;
 
     error = -1;
-    for(size_t i = 0, ei = basepaths.size(); i != ei; i++)
+    for(size_t i = 0, ei = basepaths_.size(); i != ei; i++)
       {
-        error = local::chmod_loop_core(basepaths[i],fusepath,mode,error);
+        error = local::chmod_loop_core(basepaths_[i],fusepath_,mode_,error);
       }
 
     return -error;
@@ -72,20 +72,20 @@ namespace local
 
   static
   int
-  chmod(Policy::Func::Action  actionFunc,
+  chmod(Policy::Func::Action  actionFunc_,
         const Branches       &branches_,
-        const uint64_t        minfreespace,
-        const char           *fusepath,
-        const mode_t          mode)
+        const uint64_t        minfreespace_,
+        const char           *fusepath_,
+        const mode_t          mode_)
   {
     int rv;
     vector<const string*> basepaths;
 
-    rv = actionFunc(branches_,fusepath,minfreespace,basepaths);
+    rv = actionFunc_(branches_,fusepath_,minfreespace_,basepaths);
     if(rv == -1)
       return -errno;
 
-    return local::chmod_loop(basepaths,fusepath,mode);
+    return local::chmod_loop(basepaths,fusepath_,mode_);
   }
 
   static
@@ -131,10 +131,8 @@ namespace mergerfs
           mode_t          mode,
           fuse_file_info *ffi)
     {
-      const fuse_context      *fc     = fuse_get_context();
-      const Config            &config = Config::get(fc);
-      const ugid::Set          ugid(fc->uid,fc->gid);
-      const rwlock::ReadGuard  readlock(&config.branches_lock);
+      const fuse_context *fc     = fuse_get_context();
+      const Config       &config = Config::get(fc);
 
       if((fusepath == NULL) && (ffi != NULL))
         return local::fchmod(ffi,mode);
