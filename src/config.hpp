@@ -67,7 +67,6 @@ namespace mergerfs
     mutable pthread_rwlock_t branches_lock;
     uint64_t                 minfreespace;
     bool                     moveonenospc;
-    bool                     direct_io;
     bool                     dropcacheonclose;
     bool                     symlinkify;
     time_t                   symlinkify_timeout;
@@ -78,6 +77,18 @@ namespace mergerfs
     int                      xattr;
     StatFS::Enum             statfs;
     StatFSIgnore::Enum       statfs_ignore;
+
+  public:
+    double entry_timeout;
+    double negative_timeout;
+    double attr_timeout;
+    int    remember;
+    bool   hard_remove;
+    bool   direct_io;
+    bool   kernel_cache;
+    bool   auto_cache;
+    bool   ac_attr_timeout_set;
+    double ac_attr_timeout;
 
   public:
     const Policy  *policies[FuseFunc::Enum::END];

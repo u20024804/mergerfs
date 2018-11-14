@@ -27,12 +27,46 @@ namespace mergerfs
     init(fuse_conn_info *conn,
          fuse_config    *config)
     {
+      const Config *cfg;
+
+      cfg = &Config::get();
+
       ugid::init();
 
+      conn->want |= FUSE_CAP_ASYNC_READ;
+      conn->want |= FUSE_CAP_ATOMIC_O_TRUNC;
       conn->want |= FUSE_CAP_DONT_MASK;
-#ifdef FUSE_CAP_IOCTL_DIR
       conn->want |= FUSE_CAP_IOCTL_DIR;
-#endif
+      conn->want |= FUSE_CAP_SPLICE_WRITE;
+      conn->want |= FUSE_CAP_SPLICE_MOVE;
+      conn->want |= FUSE_CAP_SPLICE_READ;
+      conn->want |= FUSE_CAP_AUTO_INVAL_DATA;
+      conn->want |= FUSE_CAP_READDIRPLUS;
+      conn->want |= FUSE_CAP_READDIRPLUS_AUTO;
+      conn->want |= FUSE_CAP_ASYNC_DIO;
+      conn->want |= FUSE_CAP_WRITEBACK_CACHE;
+      conn->want |= FUSE_CAP_PARALLEL_DIROPS;
+
+      conn->max_write     = (1024 * 1024);
+      conn->max_read      = 0;
+      conn->max_readahead = (1024 * 1024 * 16);
+
+      config->use_ino             = true;
+      config->nullpath_ok         = true;
+      config->set_uid             = false;
+      config->set_gid             = false;
+      config->set_mode            = false;
+      config->intr                = false;
+      config->entry_timeout       = cfg->entry_timeout;
+      config->negative_timeout    = cfg->negative_timeout;
+      config->attr_timeout        = cfg->attr_timeout;
+      config->remember            = cfg->remember;
+      config->hard_remove         = cfg->hard_remove;
+      config->direct_io           = cfg->direct_io;
+      config->kernel_cache        = cfg->kernel_cache;
+      config->auto_cache          = cfg->auto_cache;
+      config->ac_attr_timeout_set = cfg->ac_attr_timeout_set;
+      config->ac_attr_timeout     = cfg->ac_attr_timeout;
 
       return &Config::get_writable();
     }

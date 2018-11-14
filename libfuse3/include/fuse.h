@@ -71,7 +71,7 @@ enum fuse_fill_dir_flags {
  * stream. It does not need to be the actual physical position. A
  * value of zero is reserved to indicate that seeking in directories
  * is not supported.
- * 
+ *
  * @param buf the buffer passed to the readdir() operation
  * @param name the file name of the directory entry
  * @param stat file attributes, can be NULL
@@ -184,7 +184,7 @@ struct fuse_config {
 	 * have to guarantee uniqueness, however some applications
 	 * rely on this value being unique for the whole filesystem.
 	 *
-	 * Note that this does *not* affect the inode that libfuse 
+	 * Note that this does *not* affect the inode that libfuse
 	 * and the kernel use internally (also called the "nodeid").
 	 */
 	int use_ino;
@@ -408,7 +408,7 @@ struct fuse_operations {
 	 *  - When writeback caching is disabled, the filesystem is
 	 *    expected to properly handle the O_APPEND flag and ensure
 	 *    that each write is appending to the end of the file.
-	 * 
+	 *
          *  - When writeback caching is enabled, the kernel will
 	 *    handle O_APPEND. However, unless all changes to the file
 	 *    come through the kernel this will not work reliably. The

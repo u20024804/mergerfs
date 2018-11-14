@@ -14,13 +14,16 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#include <fuse.h>
+#include "config.hpp"
+#include "ef.hpp"
+#include "errno.hpp"
+#include "fs_glob.hpp"
+#include "num.hpp"
+#include "policy.hpp"
+#include "str.hpp"
+#include "version.hpp"
 
-#include <stddef.h>
-#include <string.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
+#include <fuse.h>
 
 #include <string>
 #include <vector>
@@ -28,13 +31,11 @@
 #include <iostream>
 #include <iomanip>
 
-#include "config.hpp"
-#include "errno.hpp"
-#include "fs_glob.hpp"
-#include "num.hpp"
-#include "policy.hpp"
-#include "str.hpp"
-#include "version.hpp"
+#include <stddef.h>
+#include <string.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
 
 using std::string;
 using std::vector;
@@ -145,7 +146,7 @@ parse_and_process(const std::string &value,
 {
   if(value == "false")
     boolean = false;
-  else if(value == "true")
+  ef(value == "true")
     boolean = true;
   else
     return 1;
@@ -160,9 +161,9 @@ parse_and_process_errno(const std::string &value_,
 {
   if(value_ == "passthrough")
     errno_ = 0;
-  else if(value_ == "nosys")
+  ef(value_ == "nosys")
     errno_ = ENOSYS;
-  else if(value_ == "noattr")
+  ef(value_ == "noattr")
     errno_ = ENOATTR;
   else
     return 1;
@@ -177,7 +178,7 @@ parse_and_process_statfs(const std::string    &value_,
 {
   if(value_ == "base")
     enum_ = Config::StatFS::BASE;
-  else if(value_ == "full")
+  ef(value_ == "full")
     enum_ = Config::StatFS::FULL;
   else
     return 1;
@@ -192,9 +193,9 @@ parse_and_process_statfsignore(const std::string          &value_,
 {
   if(value_ == "none")
     enum_ = Config::StatFSIgnore::NONE;
-  else if(value_ == "ro")
+  ef(value_ == "ro")
     enum_ = Config::StatFSIgnore::RO;
-  else if(value_ == "nc")
+  ef(value_ == "nc")
     enum_ = Config::StatFSIgnore::NC;
   else
     return 1;
@@ -209,11 +210,19 @@ parse_and_process_arg(Config            &config,
                       fuse_args         *outargs)
 {
   if(arg == "defaults")
-    return (set_default_options(*outargs),0);
-  else if(arg == "direct_io")
-    return (config.direct_io=true,1);
+    set_default_options(*outargs);
+  ef(arg == "direct_io")
+    config.direct_io = true;
+  ef(arg == "hard_remove")
+    config.hard_remove = true;
+  ef(arg == "kernel_cache")
+    config.kernel_cache = true;
+  ef(arg == "auto_cache")
+    config.auto_cache = true;
+  else
+    return 1;
 
-  return 1;
+  return 0;
 }
 
 static
@@ -231,34 +240,34 @@ parse_and_process_kv_arg(Config            &config,
     {
       if(keypart[0] == "func")
         rv = config.set_func_policy(keypart[1],value);
-      else if(keypart[0] == "category")
+      ef(keypart[0] == "category")
         rv = config.set_category_policy(keypart[1],value);
     }
   else
     {
       if(key == "minfreespace")
         rv = parse_and_process(value,config.minfreespace);
-      else if(key == "moveonenospc")
+      ef(key == "moveonenospc")
         rv = parse_and_process(value,config.moveonenospc);
-      else if(key == "dropcacheonclose")
+      ef(key == "dropcacheonclose")
         rv = parse_and_process(value,config.dropcacheonclose);
-      else if(key == "symlinkify")
+      ef(key == "symlinkify")
         rv = parse_and_process(value,config.symlinkify);
-      else if(key == "symlinkify_timeout")
+      ef(key == "symlinkify_timeout")
         rv = parse_and_process(value,config.symlinkify_timeout);
-      else if(key == "nullrw")
+      ef(key == "nullrw")
         rv = parse_and_process(value,config.nullrw);
-      else if(key == "ignorepponrename")
+      ef(key == "ignorepponrename")
         rv = parse_and_process(value,config.ignorepponrename);
-      else if(key == "security_capability")
+      ef(key == "security_capability")
         rv = parse_and_process(value,config.security_capability);
-      else if(key == "link_cow")
+      ef(key == "link_cow")
         rv = parse_and_process(value,config.link_cow);
-      else if(key == "xattr")
+      ef(key == "xattr")
         rv = parse_and_process_errno(value,config.xattr);
-      else if(key == "statfs")
+      ef(key == "statfs")
         rv = parse_and_process_statfs(value,config.statfs);
-      else if(key == "statfs_ignore")
+      ef(key == "statfs_ignore")
         rv = parse_and_process_statfsignore(value,config.statfs_ignore);
     }
 
