@@ -79,7 +79,6 @@ namespace local
     ops.create      = mergerfs::fuse::create;
     ops.destroy     = mergerfs::fuse::destroy;
     ops.fallocate   = mergerfs::fuse::fallocate;
-    //ops.fgetattr    = mergerfs::fuse::fgetattr;
     ops.flock       = mergerfs::fuse::flock;
     ops.flush       = mergerfs::fuse::flush;
     ops.fsync       = mergerfs::fuse::fsync;
