@@ -320,20 +320,20 @@ process_opt(Config     *config_,
 
 static
 int
-process_branches(const char *arg,
-                 Config     &config)
+process_branches(Config     *config_,
+                 const char *arg_)
 {
-  config.branches.set(arg);
+  config_->branches.set(arg_);
 
   return 0;
 }
 
 static
 int
-process_destmounts(const char *arg,
-                   Config     &config)
+process_destmounts(Config *config_,
+                   const char *arg_)
 {
-  config.destmount = arg;
+  config_->destmount = arg_;
 
   return 1;
 }
@@ -408,38 +408,40 @@ usage(void)
 
 static
 int
-option_processor(void       *data,
-                 const char *arg,
-                 int         key,
-                 fuse_args  *outargs)
+option_processor(void       *data_,
+                 const char *arg_,
+                 int         key_,
+                 fuse_args  *outargs_)
 {
-  int     rv     = 0;
-  Config &config = *(Config*)data;
+  int rv;
+  Config *config;
 
-  switch(key)
+  rv = 0;
+  config = (Config*)data_;
+  switch(key_)
     {
     case FUSE_OPT_KEY_OPT:
-      rv = process_opt(&config,arg);
+      rv = process_opt(config,arg_);
       break;
 
     case FUSE_OPT_KEY_NONOPT:
-      rv = config.branches.empty() ?
-        process_branches(arg,config) :
-        process_destmounts(arg,config);
+      rv = config->branches.empty() ?
+        process_branches(config,arg_) :
+        process_destmounts(config,arg_);
       break;
 
     case MERGERFS_OPT_HELP:
       usage();
       close(2);
       dup(1);
-      fuse_opt_add_arg(outargs,"-ho");
+      fuse_opt_add_arg(outargs_,"-ho");
       break;
 
     case MERGERFS_OPT_VERSION:
       std::cout << "mergerfs version: "
                 << (MERGERFS_VERSION[0] ? MERGERFS_VERSION : "unknown")
                 << std::endl;
-      fuse_opt_add_arg(outargs,"--version");
+      fuse_opt_add_arg(outargs_,"--version");
       break;
 
     default:
