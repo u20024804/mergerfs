@@ -87,7 +87,6 @@ namespace mergerfs
     bool   direct_io;
     bool   kernel_cache;
     bool   auto_cache;
-    bool   ac_attr_timeout_set;
     double ac_attr_timeout;
 
   public:

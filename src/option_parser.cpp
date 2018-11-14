@@ -127,6 +127,20 @@ parse_and_process(const std::string &value,
 
 static
 int
+parse_and_process(const std::string *value_,
+                  double            *d_)
+{
+  int rv;
+
+  rv = num::to_double(value_,d_);
+  if(rv == -1)
+    return 1;
+
+  return 0;
+}
+
+static
+int
 parse_and_process(const std::string &value,
                   time_t            &time)
 {
@@ -269,6 +283,22 @@ parse_and_process_kv_arg(Config            &config,
         rv = parse_and_process_statfs(value,config.statfs);
       ef(key == "statfs_ignore")
         rv = parse_and_process_statfsignore(value,config.statfs_ignore);
+      ef(key == "hard_remove")
+        rv = parse_and_process(value,config.hard_remove);
+      ef(key == "direct_io")
+        rv = parse_and_process(value,config.direct_io);
+      ef(key == "kernel_cache")
+        rv = parse_and_process(value,config.kernel_cache);
+      ef(key == "auto_cache")
+        rv = parse_and_process(value,config.auto_cache);
+      ef(key == "entry_timeout")
+        rv = parse_and_process(&value,&config.entry_timeout);
+      ef(key == "negative_timeout")
+        rv = parse_and_process(&value,&config.negative_timeout);
+      ef(key == "attr_timeout")
+        rv = parse_and_process(&value,&config.attr_timeout);
+      ef(key == "ac_attr_timeout")
+        rv = parse_and_process(&value,&config.ac_attr_timeout);
     }
 
   if(rv == -1)

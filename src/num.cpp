@@ -63,8 +63,8 @@ namespace num
   to_time_t(const std::string &str,
             time_t            &value)
   {
-    time_t tmp;
-    char *endptr;
+    time_t  tmp;
+    char   *endptr;
 
     tmp = strtoll(str.c_str(),&endptr,10);
     if(*endptr != '\0')
@@ -75,5 +75,18 @@ namespace num
     value = tmp;
 
     return 0;
+  }
+
+  int
+  to_double(const std::string *str_,
+            double            *value_)
+  {
+    int rv;
+
+    rv = ::sscanf(str_->c_str(),"%lf",value_);
+    if(rv == 1)
+      return 0;
+
+    return -1;
   }
 }

@@ -65,7 +65,7 @@ namespace mergerfs
       config->direct_io           = cfg->direct_io;
       config->kernel_cache        = cfg->kernel_cache;
       config->auto_cache          = cfg->auto_cache;
-      config->ac_attr_timeout_set = cfg->ac_attr_timeout_set;
+      config->ac_attr_timeout_set = (config->ac_attr_timeout > 0.0);
       config->ac_attr_timeout     = cfg->ac_attr_timeout;
 
       return &Config::get_writable();
