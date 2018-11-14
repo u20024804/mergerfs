@@ -14,16 +14,16 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
+#include "config.hpp"
+#include "errno.hpp"
+#include "fs.hpp"
+#include "rwlock.hpp"
+
 #include <string>
 #include <vector>
 
 #include <unistd.h>
 #include <sys/stat.h>
-
-#include "config.hpp"
-#include "errno.hpp"
-#include "fs.hpp"
-#include "rwlock.hpp"
 
 #define MINFREESPACE_DEFAULT (4294967295ULL)
 #define POLICYINIT(X) X(policies[FuseFunc::Enum::X])
@@ -39,7 +39,6 @@ namespace mergerfs
       branches_lock(),
       minfreespace(MINFREESPACE_DEFAULT),
       moveonenospc(false),
-      direct_io(false),
       dropcacheonclose(false),
       symlinkify(false),
       symlinkify_timeout(3600),
@@ -50,6 +49,17 @@ namespace mergerfs
       xattr(0),
       statfs(StatFS::BASE),
       statfs_ignore(StatFSIgnore::NONE),
+
+      entry_timeout(0.0),
+      negative_timeout(0.0),
+      attr_timeout(0.0),
+      remember(0),
+      hard_remove(false),
+      direct_io(false),
+      kernel_cache(false),
+      auto_cache(false),
+      ac_attr_timeout(0.0),
+      
       POLICYINIT(access),
       POLICYINIT(chmod),
       POLICYINIT(chown),

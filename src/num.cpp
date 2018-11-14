@@ -23,28 +23,33 @@
 namespace num
 {
   int
-  to_uint64_t(const std::string &str,
-              uint64_t          &value)
+  to_uint64_t(const std::string *str_,
+              uint64_t          *value_)
   {
     char *endptr;
     uint64_t tmp;
 
-    tmp = strtoll(str.c_str(),&endptr,10);
+    tmp = strtoll(str_->c_str(),&endptr,10);
     switch(*endptr)
       {
       case 'k':
       case 'K':
-        tmp *= 1024;
+        tmp *= 1024ULL;
         break;
 
       case 'm':
       case 'M':
-        tmp *= (1024 * 1024);
+        tmp *= (1024ULL * 1024ULL);
         break;
 
       case 'g':
       case 'G':
-        tmp *= (1024 * 1024 * 1024);
+        tmp *= (1024ULL * 1024ULL * 1024ULL);
+        break;
+
+      case 't':
+      case 'T':
+        tmp *= (1024ULL * 1024ULL * 1024ULL * 1024ULL);
         break;
 
       case '\0':
@@ -54,25 +59,25 @@ namespace num
         return -1;
       }
 
-    value = tmp;
+    *value_ = tmp;
 
     return 0;
   }
 
   int
-  to_time_t(const std::string &str,
-            time_t            &value)
+  to_time_t(const std::string *str_,
+            time_t            *value_)
   {
     time_t  tmp;
     char   *endptr;
 
-    tmp = strtoll(str.c_str(),&endptr,10);
+    tmp = strtoll(str_->c_str(),&endptr,10);
     if(*endptr != '\0')
       return -1;
     if(tmp < 0)
       return -1;
 
-    value = tmp;
+    *value_ = tmp;
 
     return 0;
   }

@@ -112,7 +112,7 @@ _setxattr_uint64_t(const string &attrval,
   if((flags & XATTR_CREATE) == XATTR_CREATE)
     return -EEXIST;
 
-  rv = num::to_uint64_t(attrval,uint);
+  rv = num::to_uint64_t(&attrval,&uint);
   if(rv == -1)
     return -EINVAL;
 
@@ -130,7 +130,7 @@ _setxattr_time_t(const string &attrval,
   if((flags & XATTR_CREATE) == XATTR_CREATE)
     return -EEXIST;
 
-  rv = num::to_time_t(attrval,time);
+  rv = num::to_time_t(&attrval,&time);
   if(rv == -1)
     return -EINVAL;
 
