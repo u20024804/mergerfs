@@ -14,13 +14,9 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#include <fuse.h>
-
-#include <string>
-#include <vector>
-
 #include "config.hpp"
 #include "errno.hpp"
+#include "fileinfo.hpp"
 #include "fs_base_stat.hpp"
 #include "fs_inode.hpp"
 #include "fs_path.hpp"
@@ -28,44 +24,51 @@
 #include "symlinkify.hpp"
 #include "ugid.hpp"
 
+#include <fuse.h>
+
+#include <string>
+#include <vector>
+
 using std::string;
 using std::vector;
 using mergerfs::Policy;
+using mergerfs::Config;
+using mergerfs::rwlock::ReadGuard;
 
 static
 int
-_getattr_controlfile(struct stat &st)
+getattr_controlfile(struct stat *st_)
 {
   static const uid_t  uid = ::getuid();
   static const gid_t  gid = ::getgid();
   static const time_t now = ::time(NULL);
 
-  st.st_dev     = 0;
-  st.st_ino     = fs::inode::MAGIC;
-  st.st_mode    = (S_IFREG|S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH);
-  st.st_nlink   = 1;
-  st.st_uid     = uid;
-  st.st_gid     = gid;
-  st.st_rdev    = 0;
-  st.st_size    = 0;
-  st.st_blksize = 512;
-  st.st_blocks  = 0;
-  st.st_atime   = now;
-  st.st_mtime   = now;
-  st.st_ctime   = now;
+  st_->st_dev     = 0;
+  st_->st_ino     = fs::inode::MAGIC;
+  st_->st_mode    = (S_IFREG|S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH);
+  st_->st_nlink   = 1;
+  st_->st_uid     = uid;
+  st_->st_gid     = gid;
+  st_->st_rdev    = 0;
+  st_->st_size    = 0;
+  st_->st_blksize = 512;
+  st_->st_blocks  = 0;
+  st_->st_atime   = now;
+  st_->st_mtime   = now;
+  st_->st_ctime   = now;
 
   return 0;
 }
 
 static
 int
-_getattr(Policy::Func::Search  searchFunc,
-         const Branches       &branches_,
-         const uint64_t        minfreespace,
-         const char           *fusepath,
-         struct stat          &st,
-         const bool            symlinkify,
-         const time_t          symlinkify_timeout)
+getattr(Policy::Func::Search  searchFunc,
+        const Branches       &branches_,
+        const uint64_t        minfreespace,
+        const char           *fusepath,
+        struct stat          *st,
+        const bool            symlinkify,
+        const time_t          symlinkify_timeout)
 {
   int rv;
   string fullpath;
@@ -77,16 +80,55 @@ _getattr(Policy::Func::Search  searchFunc,
 
   fs::path::make(basepaths[0],fusepath,fullpath);
 
-  rv = fs::lstat(fullpath,st);
+  rv = fs::lstat(fullpath,*st);
   if(rv == -1)
     return -errno;
 
-  if(symlinkify && symlinkify::can_be_symlink(st,symlinkify_timeout))
-    st.st_mode = symlinkify::convert(st.st_mode);
+  if(symlinkify && symlinkify::can_be_symlink(*st,symlinkify_timeout))
+    st->st_mode = symlinkify::convert(st->st_mode);
 
-  fs::inode::recompute(st);
+  fs::inode::recompute(*st);
 
   return 0;
+}
+
+static
+int
+fgetattr(const fuse_file_info *ffi_,
+         struct stat          *st_)
+{
+  int rv;
+  FileInfo *fi;
+
+  fi = reinterpret_cast<FileInfo*>(ffi_->fh);
+
+  rv = fs::fstat(fi->fd,*st_);
+  if(rv == -1)
+    return -errno;
+
+  fs::inode::recompute(*st_);
+
+  return 0;
+}
+
+static
+int
+getattr(const uid_t   uid_,
+        const gid_t   gid_,
+        const Config *config_,
+        const char   *fusepath_,
+        struct stat  *st_)
+{
+  const ugid::Set ugid(uid_,gid_);
+  const ReadGuard readlock(&config_->branches_lock);
+
+  return getattr(config_->getattr,
+                 config_->branches,
+                 config_->minfreespace,
+                 fusepath_,
+                 st_,
+                 config_->symlinkify,
+                 config_->symlinkify_timeout);
 }
 
 namespace mergerfs
@@ -101,19 +143,13 @@ namespace mergerfs
       const fuse_context *fc     = fuse_get_context();
       const Config       &config = Config::get(fc);
 
-      if(fusepath == config.controlfile)
-        return _getattr_controlfile(*st);
+      if((fusepath != NULL) && (fusepath == config.controlfile))
+        return getattr_controlfile(st);
 
-      const ugid::Set         ugid(fc->uid,fc->gid);
-      const rwlock::ReadGuard readlock(&config.branches_lock);
+      if((fusepath == NULL) && (ffi != NULL))
+        return fgetattr(ffi,st);
 
-      return _getattr(config.getattr,
-                      config.branches,
-                      config.minfreespace,
-                      fusepath,
-                      *st,
-                      config.symlinkify,
-                      config.symlinkify_timeout);
+      return getattr(fc->uid,fc->gid,&config,fusepath,st);
     }
   }
 }

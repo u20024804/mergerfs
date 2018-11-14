@@ -73,10 +73,6 @@ namespace local
                       const bool              direct_io,
                       const bool              nullrw)
   {
-    //ops.flag_nullpath_ok   = true;
-    //ops.flag_nopath        = true;
-    //ops.flag_utime_omit_ok = true;
-
     ops.access      = mergerfs::fuse::access;
     ops.bmap        = NULL;
     ops.chmod       = mergerfs::fuse::chmod;
