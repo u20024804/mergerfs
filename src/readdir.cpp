@@ -98,6 +98,61 @@ namespace local
 
     return 0;
   }
+
+  static
+  int
+  readdir_plus(const Branches        &branches_,
+               const char            *dirname,
+               void                  *buf,
+               const fuse_fill_dir_t  filler)
+  {
+    HashSet names;
+    string basepath;
+    struct stat st = {0};
+    enum fuse_fill_dir_flags fill_flags;
+
+    fill_flags = FUSE_FILL_DIR_PLUS;
+    for(size_t i = 0, ei = branches_.size(); i != ei; i++)
+      {
+        int rv;
+        int dirfd;
+        DIR *dh;
+
+        basepath = fs::path::make(&branches_[i].path,dirname);
+
+        dh = fs::opendir(basepath);
+        if(!dh)
+          continue;
+
+        dirfd     = fs::dirfd(dh);
+        st.st_dev = fs::devid(dirfd);
+        if(st.st_dev == (dev_t)-1)
+          st.st_dev = i;
+
+        rv = 0;
+        for(struct dirent *de = fs::readdir(dh);
+            de && !rv;
+            de = fs::readdir(dh))
+          {
+            rv = names.put(de->d_name);
+            if(rv == 0)
+              continue;
+
+            st.st_ino  = de->d_ino;
+            st.st_mode = DTTOIF(de->d_type);
+
+            fs::inode::recompute(st);
+
+            rv = filler(buf,de->d_name,&st,NO_OFFSET,fill_flags);
+            if(rv)
+              return (fs::closedir(dh),-ENOMEM);
+          }
+
+        fs::closedir(dh);
+      }
+
+    return 0;
+  }
 }
 
 namespace mergerfs
@@ -119,6 +174,12 @@ namespace mergerfs
       const rwlock::ReadGuard  readlock(&config.branches_lock);
 
       di = reinterpret_cast<DirInfo*>(ffi_->fh);
+
+      if(flags_ & FUSE_READDIR_PLUS)
+        return local::readdir_plus(config.branches,
+                                   di->fusepath.c_str(),
+                                   buf_,
+                                   filler_);
 
       return local::readdir(config.branches,
                             di->fusepath.c_str(),
