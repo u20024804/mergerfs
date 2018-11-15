@@ -116,6 +116,24 @@ namespace local
 
   static
   int
+  getattr(const char  *fusepath_,
+          struct stat *st_)
+  {
+    const fuse_context *fc     = fuse_get_context();
+    const Config       &config = Config::get(fc);
+
+    if(fusepath_ == config.controlfile)
+      return local::getattr_controlfile(st_);
+
+    return local::getattr(fc->uid,
+                          fc->gid,
+                          &config,
+                          fusepath_,
+                          st_);
+  }
+
+  static
+  int
   fgetattr(const fuse_file_info *ffi_,
            struct stat          *st_)
   {
@@ -132,24 +150,6 @@ namespace local
 
     return 0;
   }
-
-  static
-  int
-  getattr(const char  *fusepath_,
-          struct stat *st_)
-  {
-    const fuse_context *fc     = fuse_get_context();
-    const Config       &config = Config::get(fc);
-
-    if(fusepath_ == config.controlfile)
-      return local::getattr_controlfile(st_);
-
-    return local::getattr(fc->uid,
-                          fc->gid,
-                          &config,
-                          fusepath_,
-                          st_);
-  }
 }
 
 namespace mergerfs
@@ -157,14 +157,14 @@ namespace mergerfs
   namespace fuse
   {
     int
-    getattr(const char     *fusepath,
-            struct stat    *st,
-            fuse_file_info *ffi)
+    getattr(const char     *fusepath_,
+            struct stat    *st_,
+            fuse_file_info *ffi_)
     {
-      if((fusepath == NULL) && (ffi != NULL))
-        return local::fgetattr(ffi,st);
+      if((fusepath_ == NULL) && (ffi_ != NULL))
+        return local::fgetattr(ffi_,st_);
 
-      return local::getattr(fusepath,st);
+      return local::getattr(fusepath_,st_);
     }
   }
 }
