@@ -14,75 +14,114 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#include <fuse.h>
-
-#include <fcntl.h>
-
-#include <string>
-#include <vector>
-
 #include "config.hpp"
 #include "errno.hpp"
+#include "fileinfo.hpp"
 #include "fs_base_utime.hpp"
 #include "fs_path.hpp"
 #include "rv.hpp"
 #include "rwlock.hpp"
 #include "ugid.hpp"
 
+#include <fuse.h>
+
+#include <string>
+#include <vector>
+
+#include <fcntl.h>
+
 using std::string;
 using std::vector;
 using mergerfs::Policy;
+using mergerfs::Config;
+using namespace mergerfs;
 
-static
-int
-_utimens_loop_core(const string   *basepath,
-                   const char     *fusepath,
-                   const timespec  ts[2],
-                   const int       error)
+namespace local
 {
-  int rv;
-  string fullpath;
+  static
+  int
+  utimens_loop_core(const string   *basepath_,
+                    const char     *fusepath_,
+                    const timespec  ts_[2],
+                    const int       error_)
+  {
+    int rv;
+    string fullpath;
 
-  fs::path::make(basepath,fusepath,fullpath);
+    fullpath = fs::path::make(basepath_,fusepath_);
 
-  rv = fs::lutime(fullpath,ts);
+    rv = fs::lutimens(fullpath,ts_);
 
-  return error::calc(rv,error,errno);
-}
+    return error::calc(rv,error_,errno);
+  }
 
-static
-int
-_utimens_loop(const vector<const string*> &basepaths,
-              const char                  *fusepath,
-              const timespec               ts[2])
-{
-  int error;
+  static
+  int
+  utimens_loop(const vector<const string*> &basepaths_,
+               const char                  *fusepath_,
+               const timespec               ts_[2])
+  {
+    int error;
 
-  error = -1;
-  for(size_t i = 0, ei = basepaths.size(); i != ei; i++)
-    {
-      error = _utimens_loop_core(basepaths[i],fusepath,ts,error);
-    }
+    error = -1;
+    for(size_t i = 0, ei = basepaths_.size(); i != ei; i++)
+      {
+        error = local::utimens_loop_core(basepaths_[i],fusepath_,ts_,error);
+      }
 
-  return -error;
-}
+    return -error;
+  }
 
-static
-int
-_utimens(Policy::Func::Action  actionFunc,
-         const Branches       &branches_,
-         const uint64_t        minfreespace,
-         const char           *fusepath,
-         const timespec        ts[2])
-{
-  int rv;
-  vector<const string*> basepaths;
+  static
+  int
+  utimens(Policy::Func::Action  actionFunc_,
+          const Branches       &branches_,
+          const uint64_t        minfreespace_,
+          const char           *fusepath_,
+          const timespec        ts_[2])
+  {
+    int rv;
+    vector<const string*> basepaths;
 
-  rv = actionFunc(branches_,fusepath,minfreespace,basepaths);
-  if(rv == -1)
-    return -errno;
+    rv = actionFunc_(branches_,fusepath_,minfreespace_,basepaths);
+    if(rv == -1)
+      return -errno;
 
-  return _utimens_loop(basepaths,fusepath,ts);
+    return local::utimens_loop(basepaths,fusepath_,ts_);
+  }
+
+  static
+  inline
+  int
+  utimens(const char     *fusepath_,
+          const timespec  ts_[2])
+  {
+    const fuse_context      *fc     = fuse_get_context();
+    const Config            &config = Config::get(fc);
+    const ugid::Set          ugid(fc->uid,fc->gid);
+    const rwlock::ReadGuard  readlock(&config.branches_lock);
+
+    return local::utimens(config.utimens,
+                          config.branches,
+                          config.minfreespace,
+                          fusepath_,
+                          ts_);
+  }
+
+  static
+  int
+  futimens(const fuse_file_info *ffi_,
+           const timespec        ts_[2])
+  {
+    int rv;
+    FileInfo *fi;
+
+    fi = reinterpret_cast<FileInfo*>(ffi_->fh);
+
+    rv = fs::futimens(fi->fd,ts_);
+
+    return ((rv == -1) ? -errno : 0);
+  }
 }
 
 namespace mergerfs
@@ -90,20 +129,14 @@ namespace mergerfs
   namespace fuse
   {
     int
-    utimens(const char     *fusepath,
-            const timespec  ts[2],
-            fuse_file_info *ffi)
+    utimens(const char     *fusepath_,
+            const timespec  ts_[2],
+            fuse_file_info *ffi_)
     {
-      const fuse_context      *fc     = fuse_get_context();
-      const Config            &config = Config::get(fc);
-      const ugid::Set          ugid(fc->uid,fc->gid);
-      const rwlock::ReadGuard  readlock(&config.branches_lock);
+      if(ffi_ != NULL)
+        return local::futimens(ffi_,ts_);
 
-      return _utimens(config.utimens,
-                      config.branches,
-                      config.minfreespace,
-                      fusepath,
-                      ts);
+      return local::utimens(fusepath_,ts_);
     }
   }
 }

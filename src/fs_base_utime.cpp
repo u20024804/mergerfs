@@ -1,6 +1,4 @@
 /*
-  ISC License
-
   Copyright (c) 2016, Antonio SJ Musumeci <trapexit@spawn.link>
 
   Permission to use, copy, modify, and/or distribute this software for any
@@ -16,32 +14,46 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#pragma once
+#ifdef __linux__
+# include "fs_base_utime_utimensat.icpp"
+#elif __FreeBSD__ >= 11
+# include "fs_base_utime_utimensat.icpp"
+#else
+# include "fs_base_utime_generic.icpp"
+#endif
 
-#include <string>
-
-#include <fcntl.h>
-#include <sys/stat.h>
+#include "fs_base_stat.hpp"
 
 namespace fs
 {
-  static
-  inline
   int
-  utime(const int              dirfd,
-        const std::string     &path,
-        const struct timespec  times[2],
-        const int              flags)
+  futimens(const int          fd_,
+           const struct stat &st_)
   {
-    return ::utimensat(dirfd,path.c_str(),times,flags);
+    struct timespec times[2];
+
+    times[0] = *fs::stat_atime(st_);
+    times[1] = *fs::stat_mtime(st_);
+
+    return fs::futimens(fd_,times);
   }
 
-  static
-  inline
   int
-  utime(const int             fd,
-        const struct timespec times[2])
+  lutimens(const std::string     &path,
+           const struct timespec  times[2])
   {
-    return ::futimens(fd,times);
+    return fs::utimensat(AT_FDCWD,path,times,AT_SYMLINK_NOFOLLOW);
+  }
+
+  int
+  lutimens(const std::string &path_,
+           const struct stat &st_)
+  {
+    struct timespec times[2];
+
+    times[0] = *fs::stat_atime(st_);
+    times[1] = *fs::stat_mtime(st_);
+
+    return fs::lutimens(path_,times);
   }
 }

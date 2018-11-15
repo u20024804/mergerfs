@@ -109,7 +109,7 @@ namespace fs
     if(return_metadata_errors && (rv == -1))
       return -1;
 
-    rv = fs::utime(topath,st);
+    rv = fs::lutimens(topath,st);
     if(return_metadata_errors && (rv == -1))
       return -1;
 

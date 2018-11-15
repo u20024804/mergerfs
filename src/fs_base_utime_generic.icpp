@@ -16,16 +16,15 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#pragma once
+#include "fs_base_futimesat.hpp"
+#include "fs_base_stat.hpp"
 
 #include <string>
 
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <sys/time.h>
-
-#include "fs_base_futimesat.hpp"
-#include "fs_base_stat.hpp"
+#include <sys/types.h>
 
 #ifndef UTIME_NOW
 # define UTIME_NOW  ((1l << 30) - 1l)
@@ -258,13 +257,11 @@ _convert_timespec_to_timeval(const int               fd,
 
 namespace fs
 {
-  static
-  inline
   int
-  utime(const int              dirfd,
-        const std::string     &path,
-        const struct timespec  ts[2],
-        const int              flags)
+  utimensat(const int              dirfd,
+            const char            *path,
+            const struct timespec  ts[2],
+            const int              flags)
   {
     int rv;
     struct timeval  tv[2];
@@ -282,32 +279,39 @@ namespace fs
       return -1;
 
     if((flags & AT_SYMLINK_NOFOLLOW) == 0)
-      return fs::futimesat(dirfd,path.c_str(),tvp);
+      return fs::futimesat(dirfd,path,tvp);
     if(_can_call_lutimes(dirfd,path,flags))
-      return ::lutimes(path.c_str(),tvp);
+      return ::lutimes(path,tvp);
 
     return (errno=ENOTSUP,-1);
   }
 
-  static
-  inline
   int
-  utime(const int             fd,
-        const struct timespec ts[2])
+  utimensat(const int              dirfd,
+            const std::string     &path,
+            const struct timespec  ts[2],
+            const int              flags)
+  {
+    return fs::utimensat(dirfd,path.c_str(),ts,flags);
+  }
+
+  int
+  futimens(const int             fd_,
+           const struct timespec ts_[2])
   {
     int rv;
     struct timeval  tv[2];
     struct timeval *tvp;
 
-    if(_timespec_invalid(ts))
+    if(_timespec_invalid(ts_))
       return (errno=EINVAL,-1);
-    if(_should_ignore(ts))
+    if(_should_ignore(ts_))
       return 0;
 
-    rv = _convert_timespec_to_timeval(fd,ts,tv,tvp);
+    rv = _convert_timespec_to_timeval(fd_,ts_,tv,tvp);
     if(rv == -1)
       return -1;
 
-    return ::futimes(fd,tvp);
+    return ::futimes(fd_,tvp);
   }
 }

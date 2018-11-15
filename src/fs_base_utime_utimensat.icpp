@@ -1,7 +1,7 @@
 /*
   ISC License
 
-  Copyright (c) 2017, Antonio SJ Musumeci <trapexit@spawn.link>
+  Copyright (c) 2016, Antonio SJ Musumeci <trapexit@spawn.link>
 
   Permission to use, copy, modify, and/or distribute this software for any
   purpose with or without fee is hereby granted, provided that the above
@@ -16,14 +16,35 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#pragma once
+#include <fcntl.h>
+#include <sys/stat.h>
 
-#include <sys/time.h>
+#include <string>
 
 namespace fs
 {
   int
-  futimesat(const int             dirfd,
-            const char           *pathname,
-            const struct timeval  times[2]);
+  utimensat(const int              dirfd_,
+            const char            *path_,
+            const struct timespec  times_[2],
+            const int              flags_)
+  {
+    return ::utimensat(dirfd_,path_,times_,flags_);
+  }
+
+  int
+  utimensat(const int              dirfd_,
+            const std::string     &path_,
+            const struct timespec  times_[2],
+            const int              flags_)
+  {
+    return fs::utimensat(dirfd_,path_.c_str(),times_,flags_);
+  }
+
+  int
+  futimens(const int             fd_,
+           const struct timespec times_[2])
+  {
+    return ::futimens(fd_,times_);
+  }
 }

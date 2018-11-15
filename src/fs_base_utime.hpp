@@ -16,52 +16,36 @@
 
 #pragma once
 
-#ifdef __linux__
-# include "fs_base_utime_utimensat.hpp"
-#elif __FreeBSD__ >= 11
-# include "fs_base_utime_utimensat.hpp"
-#else
-# include "fs_base_utime_generic.hpp"
-#endif
+#include <string>
 
-#include "fs_base_stat.hpp"
+#include <fcntl.h>
+#include <sys/stat.h>
 
 namespace fs
 {
-  static
-  inline
   int
-  utime(const std::string &path,
-        const struct stat &st)
-  {
-    struct timespec times[2];
+  utimensat(const int              dirfd_,
+            const char            *pathname_,
+            const struct timespec  times_[2],
+            const int              flags_);
 
-    times[0] = *fs::stat_atime(st);
-    times[1] = *fs::stat_mtime(st);
-
-    return fs::utime(AT_FDCWD,path,times,0);
-  }
-
-  static
-  inline
   int
-  utime(const int          fd,
-        const struct stat &st)
-  {
-    struct timespec times[2];
+  futimens(const int             fd_,
+           const struct timespec times_[2]);
 
-    times[0] = *fs::stat_atime(st);
-    times[1] = *fs::stat_mtime(st);
-
-    return fs::utime(fd,times);
-  }
-
-  static
-  inline
   int
-  lutime(const std::string     &path,
-         const struct timespec  times[2])
-  {
-    return fs::utime(AT_FDCWD,path,times,AT_SYMLINK_NOFOLLOW);
-  }
+  lutimens(const std::string     &path,
+           const struct timespec  times[2]);
+
+  int
+  utimens(const std::string &path_,
+          const struct stat &st_);
+
+  int
+  futimens(const int          fd_,
+           const struct stat &st_);
+
+  int
+  lutimens(const std::string &path_,
+           const struct stat &st_);
 }

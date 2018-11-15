@@ -108,7 +108,7 @@ namespace fs
     if(rv == -1)
       return -1;
 
-    rv = fs::utime(dst_fd_,src_st);
+    rv = fs::futimens(dst_fd_,src_st);
     if(rv == -1)
       return -1;
 
