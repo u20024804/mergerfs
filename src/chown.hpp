@@ -23,9 +23,9 @@ namespace mergerfs
   namespace fuse
   {
     int
-    chown(const char     *fusepath,
-          uid_t           uid,
-          gid_t           gid,
-          fuse_file_info *fii);
+    chown(const char     *fusepath_,
+          uid_t           uid_,
+          gid_t           gid_,
+          fuse_file_info *ffi_);
   }
 }

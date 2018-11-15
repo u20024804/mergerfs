@@ -113,19 +113,18 @@ namespace local
 
   static
   int
-  chown(const uid_t   as_uid_,
-        const gid_t   as_gid_,
-        const Config *config_,
-        const char   *fusepath_,
+  chown(const char   *fusepath_,
         const uid_t   uid_,
         const gid_t   gid_)
   {
-    const ugid::Set ugid(as_uid_,as_gid_);
-    const ReadGuard readlock(&config_->branches_lock);
+    const fuse_context *fc     = fuse_get_context();
+    const Config       &config = Config::get(fc);
+    const ugid::Set     ugid(fc->uid,fc->gid);
+    const ReadGuard     readlock(&config.branches_lock);
 
-    return local::chown(config_->chown,
-                        config_->branches,
-                        config_->minfreespace,
+    return local::chown(config.chown,
+                        config.branches,
+                        config.minfreespace,
                         fusepath_,
                         uid_,
                         gid_);
@@ -142,19 +141,10 @@ namespace mergerfs
           gid_t           gid_,
           fuse_file_info *ffi_)
     {
-      const fuse_context      *fc     = fuse_get_context();
-      const Config            &config = Config::get(fc);
-
-
       if((fusepath_ == NULL) && (ffi_ != NULL))
         return local::fchown(ffi_,uid_,gid_);
 
-      return local::chown(fc->uid,
-                          fc->gid,
-                          &config,
-                          fusepath_,
-                          uid_,
-                          gid_);
+      return local::chown(fusepath_,uid_,gid_);
     }
   }
 }

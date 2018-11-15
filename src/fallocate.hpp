@@ -25,6 +25,6 @@ namespace mergerfs
               int             mode,
               off_t           offset,
               off_t           len,
-              fuse_file_info *fi);
+              fuse_file_info *ffi);
   }
 }

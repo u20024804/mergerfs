@@ -14,11 +14,6 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#include <fuse.h>
-
-#include <string>
-#include <vector>
-
 #include "config.hpp"
 #include "errno.hpp"
 #include "fileinfo.hpp"
@@ -28,6 +23,11 @@
 #include "fs_path.hpp"
 #include "rwlock.hpp"
 #include "ugid.hpp"
+
+#include <fuse.h>
+
+#include <string>
+#include <vector>
 
 using std::string;
 using std::vector;

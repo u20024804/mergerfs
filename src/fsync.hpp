@@ -25,6 +25,6 @@ namespace mergerfs
     int
     fsync(const char     *fusepath,
           int             isdatasync,
-          fuse_file_info *fi);
+          fuse_file_info *ffi);
   }
 }
