@@ -42,56 +42,62 @@ using std::vector;
 
 #define NO_OFFSET 0
 
-static
-int
-_readdir(const Branches        &branches_,
-         const char            *dirname,
-         void                  *buf,
-         const fuse_fill_dir_t  filler)
+namespace local
 {
-  HashSet names;
-  string basepath;
-  struct stat st = {0};
-  enum fuse_fill_dir_flags fill_flags;
+  static
+  int
+  readdir(const Branches        &branches_,
+          const char            *dirname,
+          void                  *buf,
+          const fuse_fill_dir_t  filler)
+  {
+    HashSet names;
+    string basepath;
+    struct stat st = {0};
+    enum fuse_fill_dir_flags fill_flags;
 
-  for(size_t i = 0, ei = branches_.size(); i != ei; i++)
-    {
-      int rv;
-      int dirfd;
-      DIR *dh;
+    fill_flags = FUSE_FILL_DIR_PLUS;
+    for(size_t i = 0, ei = branches_.size(); i != ei; i++)
+      {
+        int rv;
+        int dirfd;
+        DIR *dh;
 
-      basepath = fs::path::make(&branches_[i].path,dirname);
+        basepath = fs::path::make(&branches_[i].path,dirname);
 
-      dh = fs::opendir(basepath);
-      if(!dh)
-        continue;
+        dh = fs::opendir(basepath);
+        if(!dh)
+          continue;
 
-      dirfd     = fs::dirfd(dh);
-      st.st_dev = fs::devid(dirfd);
-      if(st.st_dev == (dev_t)-1)
-        st.st_dev = i;
+        dirfd     = fs::dirfd(dh);
+        st.st_dev = fs::devid(dirfd);
+        if(st.st_dev == (dev_t)-1)
+          st.st_dev = i;
 
-      rv = 0;
-      for(struct dirent *de = fs::readdir(dh); de && !rv; de = fs::readdir(dh))
-        {
-          rv = names.put(de->d_name);
-          if(rv == 0)
-            continue;
+        rv = 0;
+        for(struct dirent *de = fs::readdir(dh);
+            de && !rv;
+            de = fs::readdir(dh))
+          {
+            rv = names.put(de->d_name);
+            if(rv == 0)
+              continue;
 
-          st.st_ino  = de->d_ino;
-          st.st_mode = DTTOIF(de->d_type);
+            st.st_ino  = de->d_ino;
+            st.st_mode = DTTOIF(de->d_type);
 
-          fs::inode::recompute(st);
+            fs::inode::recompute(st);
 
-          rv = filler(buf,de->d_name,&st,NO_OFFSET,fill_flags);
-          if(rv)
-            return (fs::closedir(dh),-ENOMEM);
-        }
+            rv = filler(buf,de->d_name,&st,NO_OFFSET,fill_flags);
+            if(rv)
+              return (fs::closedir(dh),-ENOMEM);
+          }
 
-      fs::closedir(dh);
-    }
+        fs::closedir(dh);
+      }
 
-  return 0;
+    return 0;
+  }
 }
 
 namespace mergerfs
@@ -99,39 +105,25 @@ namespace mergerfs
   namespace fuse
   {
     int
-    readdir(const char      *fusepath,
-            void            *buf,
-            fuse_fill_dir_t  filler,
-            off_t            offset,
-            fuse_file_info  *ffi)
+    readdir(const char              *fusepath_,
+            void                    *buf_,
+            fuse_fill_dir_t          filler_,
+            off_t                    offset_,
+            fuse_file_info          *ffi_,
+            enum fuse_readdir_flags  flags_)
     {
-      DirInfo                 *di     = reinterpret_cast<DirInfo*>(ffi->fh);
+      DirInfo                 *di;
       const fuse_context      *fc     = fuse_get_context();
       const Config            &config = Config::get(fc);
       const ugid::Set          ugid(fc->uid,fc->gid);
       const rwlock::ReadGuard  readlock(&config.branches_lock);
 
-      return ::_readdir(config.branches,
-                        di->fusepath.c_str(),
-                        buf,
-                        filler);
-    }
+      di = reinterpret_cast<DirInfo*>(ffi_->fh);
 
-    int
-    readdir(const char              *fusepath,
-            void                    *buf,
-            fuse_fill_dir_t          filler,
-            off_t                    offset,
-            struct fuse_file_info   *fi,
-            enum fuse_readdir_flags  flags)
-    {
-      return readdir(fusepath,
-                     buf,
-                     filler,
-                     offset,
-                     fi);
-                     
+      return local::readdir(config.branches,
+                            di->fusepath.c_str(),
+                            buf_,
+                            filler_);
     }
-    
   }
 }
