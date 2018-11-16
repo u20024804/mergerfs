@@ -14,9 +14,6 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#include <string>
-#include <vector>
-
 #include "config.hpp"
 #include "errno.hpp"
 #include "fs_base_access.hpp"
@@ -24,32 +21,38 @@
 #include "rwlock.hpp"
 #include "ugid.hpp"
 
+#include <string>
+#include <vector>
+
 using std::string;
 using std::vector;
 using mergerfs::Policy;
 using mergerfs::Category;
 
-static
-int
-_access(Policy::Func::Search  searchFunc,
-        const Branches       &branches_,
-        const uint64_t        minfreespace,
-        const char           *fusepath,
-        const int             mask)
+namespace local
 {
-  int rv;
-  string fullpath;
-  vector<const string*> basepaths;
+  static
+  int
+  access(Policy::Func::Search  searchFunc_,
+         const Branches       &branches_,
+         const uint64_t        minfreespace_,
+         const char           *fusepath_,
+         const int             mask_)
+  {
+    int rv;
+    string fullpath;
+    vector<const string*> basepaths;
 
-  rv = searchFunc(branches_,fusepath,minfreespace,basepaths);
-  if(rv == -1)
-    return -errno;
+    rv = searchFunc_(branches_,fusepath_,minfreespace_,basepaths);
+    if(rv == -1)
+      return -errno;
 
-  fs::path::make(basepaths[0],fusepath,fullpath);
+    fullpath = fs::path::make(basepaths[0],fusepath_);
 
-  rv = fs::eaccess(fullpath,mask);
+    rv = fs::eaccess(fullpath,mask_);
 
-  return ((rv == -1) ? -errno : 0);
+    return ((rv == -1) ? -errno : 0);
+  }
 }
 
 namespace mergerfs
@@ -57,19 +60,19 @@ namespace mergerfs
   namespace fuse
   {
     int
-    access(const char *fusepath,
-           int         mask)
+    access(const char *fusepath_,
+           int         mask_)
     {
       const fuse_context      *fc     = fuse_get_context();
       const Config            &config = Config::get(fc);
       const ugid::Set          ugid(fc->uid,fc->gid);
       const rwlock::ReadGuard  readlock(&config.branches_lock);
 
-      return _access(config.access,
-                     config.branches,
-                     config.minfreespace,
-                     fusepath,
-                     mask);
+      return local::access(config.access,
+                           config.branches,
+                           config.minfreespace,
+                           fusepath_,
+                           mask_);
     }
   }
 }
