@@ -32,7 +32,7 @@ using std::string;
 using std::vector;
 using mergerfs::Policy;
 using mergerfs::Config;
-using mergerfs::rwlock::ReadGuard;
+using namespace mergerfs;
 
 namespace local
 {
@@ -93,10 +93,10 @@ namespace local
   chmod(const char   *fusepath_,
         const mode_t  mode_)
   {
-    const fuse_context *fc     = fuse_get_context();
-    const Config       &config = Config::get(fc);
-    const ugid::Set ugid(fc->uid,fc->gid);
-    const ReadGuard readlock(&config.branches_lock);
+    const fuse_context      *fc     = fuse_get_context();
+    const Config            &config = Config::get(fc);
+    const ugid::Set          ugid(fc->uid,fc->gid);
+    const rwlock::ReadGuard  readlock(&config.branches_lock);
 
     return local::chmod(config.chmod,
                         config.branches,

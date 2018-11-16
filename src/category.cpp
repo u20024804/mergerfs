@@ -14,11 +14,11 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#include <string>
-#include <vector>
-
 #include "category.hpp"
 #include "buildvector.hpp"
+
+#include <string>
+#include <vector>
 
 #define CATEGORY(X) Category(Category::Enum::X,#X)
 
@@ -39,11 +39,11 @@ namespace mergerfs
   const Category &Category::search  = Category::categories[Category::Enum::search];
 
   const Category&
-  Category::find(const std::string &str)
+  Category::find(const std::string &str_)
   {
     for(int i = Enum::BEGIN; i != Enum::END; ++i)
       {
-        if(categories[i] == str)
+        if(categories[i] == str_)
           return categories[i];
       }
 
@@ -51,11 +51,11 @@ namespace mergerfs
   }
 
   const Category&
-  Category::find(const Category::Enum::Type i)
+  Category::find(const Category::Enum::Type i_)
   {
-    if(i >= Category::Enum::BEGIN &&
-       i  < Category::Enum::END)
-      return categories[i];
+    if(i_ >= Category::Enum::BEGIN &&
+       i_  < Category::Enum::END)
+      return categories[i_];
 
     return invalid;
   }
