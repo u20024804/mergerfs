@@ -26,6 +26,7 @@
 #include "errno.hpp"
 #include "fs_base_closedir.hpp"
 #include "fs_base_dirfd.hpp"
+#include "fs_base_fstatat.hpp"
 #include "fs_base_opendir.hpp"
 #include "fs_base_readdir.hpp"
 #include "fs_base_stat.hpp"
@@ -54,14 +55,15 @@ namespace local
     HashSet names;
     string basepath;
     struct stat st = {0};
-    enum fuse_fill_dir_flags fill_flags;
+    fuse_fill_dir_flags fill_flags;
 
-    fill_flags = FUSE_FILL_DIR_PLUS;
+    fill_flags = (fuse_fill_dir_flags)0;
     for(size_t i = 0, ei = branches_.size(); i != ei; i++)
       {
         int rv;
         int dirfd;
         DIR *dh;
+        struct dirent *de;
 
         basepath = fs::path::make(&branches_[i].path,dirname);
 
@@ -75,7 +77,7 @@ namespace local
           st.st_dev = i;
 
         rv = 0;
-        for(struct dirent *de = fs::readdir(dh);
+        for(de = fs::readdir(dh);
             de && !rv;
             de = fs::readdir(dh))
           {
@@ -109,7 +111,7 @@ namespace local
     HashSet names;
     string basepath;
     struct stat st = {0};
-    enum fuse_fill_dir_flags fill_flags;
+    fuse_fill_dir_flags fill_flags;
 
     fill_flags = FUSE_FILL_DIR_PLUS;
     for(size_t i = 0, ei = branches_.size(); i != ei; i++)
@@ -117,6 +119,8 @@ namespace local
         int rv;
         int dirfd;
         DIR *dh;
+        dev_t dev;
+        struct dirent *de;
 
         basepath = fs::path::make(&branches_[i].path,dirname);
 
@@ -124,13 +128,13 @@ namespace local
         if(!dh)
           continue;
 
-        dirfd     = fs::dirfd(dh);
-        st.st_dev = fs::devid(dirfd);
-        if(st.st_dev == (dev_t)-1)
-          st.st_dev = i;
+        dirfd = fs::dirfd(dh);
+        dev   = fs::devid(dirfd);
+        if(dev == (dev_t)-1)
+          dev = i;
 
         rv = 0;
-        for(struct dirent *de = fs::readdir(dh);
+        for(de = fs::readdir(dh);
             de && !rv;
             de = fs::readdir(dh))
           {
@@ -138,8 +142,13 @@ namespace local
             if(rv == 0)
               continue;
 
-            st.st_ino  = de->d_ino;
-            st.st_mode = DTTOIF(de->d_type);
+            rv = fs::fstatat(dirfd,de->d_name,&st,AT_SYMLINK_NOFOLLOW);
+            if(rv == -1)
+              {
+                st.st_dev  = dev;
+                st.st_ino  = de->d_ino;
+                st.st_mode = DTTOIF(de->d_type);
+              }
 
             fs::inode::recompute(st);
 
