@@ -16,10 +16,10 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#include <string>
-
 #include "fs_base_getxattr.hpp"
 #include "fs_path.hpp"
+
+#include <string>
 
 const char POSIX_ACL_DEFAULT_XATTR[] = "system.posix_acl_default";
 
