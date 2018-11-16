@@ -14,11 +14,11 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
+#include <fnmatch.h>
+
 #include <string>
 #include <vector>
 #include <sstream>
-
-#include <fnmatch.h>
 
 using std::string;
 using std::vector;

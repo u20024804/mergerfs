@@ -14,14 +14,6 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#include <fuse.h>
-
-#include <algorithm>
-#include <limits>
-#include <map>
-#include <string>
-#include <vector>
-
 #include "config.hpp"
 #include "errno.hpp"
 #include "fs_base_stat.hpp"
@@ -31,118 +23,129 @@
 #include "statvfs_util.hpp"
 #include "ugid.hpp"
 
+#include <fuse.h>
+
+#include <algorithm>
+#include <limits>
+#include <map>
+#include <string>
+#include <vector>
+
 using std::string;
 using std::map;
 using std::vector;
-using mergerfs::Config;
+using namespace mergerfs;
 typedef Config::StatFS StatFS;
 typedef Config::StatFSIgnore StatFSIgnore;
 
-static
-void
-_normalize_statvfs(struct statvfs      *fsstat,
-                   const unsigned long  min_bsize,
-                   const unsigned long  min_frsize,
-                   const unsigned long  min_namemax)
+namespace local
 {
-  fsstat->f_blocks  = (fsblkcnt_t)((fsstat->f_blocks * fsstat->f_frsize) / min_frsize);
-  fsstat->f_bfree   = (fsblkcnt_t)((fsstat->f_bfree  * fsstat->f_frsize) / min_frsize);
-  fsstat->f_bavail  = (fsblkcnt_t)((fsstat->f_bavail * fsstat->f_frsize) / min_frsize);
-  fsstat->f_bsize   = min_bsize;
-  fsstat->f_frsize  = min_frsize;
-  fsstat->f_namemax = min_namemax;
-}
+  static
+  void
+  normalize_statvfs(struct statvfs      *fsstat,
+                    const unsigned long  min_bsize,
+                    const unsigned long  min_frsize,
+                    const unsigned long  min_namemax)
+  {
+    fsstat->f_blocks  = (fsblkcnt_t)((fsstat->f_blocks * fsstat->f_frsize) / min_frsize);
+    fsstat->f_bfree   = (fsblkcnt_t)((fsstat->f_bfree  * fsstat->f_frsize) / min_frsize);
+    fsstat->f_bavail  = (fsblkcnt_t)((fsstat->f_bavail * fsstat->f_frsize) / min_frsize);
+    fsstat->f_bsize   = min_bsize;
+    fsstat->f_frsize  = min_frsize;
+    fsstat->f_namemax = min_namemax;
+  }
 
-static
-void
-_merge_statvfs(struct statvfs       * const out,
-               const struct statvfs * const in)
-{
-  out->f_blocks += in->f_blocks;
-  out->f_bfree  += in->f_bfree;
-  out->f_bavail += in->f_bavail;
+  static
+  void
+  merge_statvfs(struct statvfs       * const out,
+                const struct statvfs * const in)
+  {
+    out->f_blocks += in->f_blocks;
+    out->f_bfree  += in->f_bfree;
+    out->f_bavail += in->f_bavail;
 
-  out->f_files  += in->f_files;
-  out->f_ffree  += in->f_ffree;
-  out->f_favail += in->f_favail;
-}
+    out->f_files  += in->f_files;
+    out->f_ffree  += in->f_ffree;
+    out->f_favail += in->f_favail;
+  }
 
-static
-bool
-_should_ignore(const StatFSIgnore::Enum  ignore_,
-               const Branch             *branch_,
-               const bool                readonly_)
-{
-  return ((((ignore_ == StatFSIgnore::RO) || readonly_) &&
-           (branch_->ro_or_nc())) ||
-          ((ignore_ == StatFSIgnore::NC) && (branch_->nc())));
-}
+  static
+  bool
+  should_ignore(const StatFSIgnore::Enum  ignore_,
+                const Branch             *branch_,
+                const bool                readonly_)
+  {
+    return ((((ignore_ == StatFSIgnore::RO) || readonly_) &&
+             (branch_->ro_or_nc())) ||
+            ((ignore_ == StatFSIgnore::NC) && (branch_->nc())));
+  }
 
-static
-int
-_statfs(const Branches           &branches_,
-        const char               *fusepath,
-        const StatFS::Enum        mode,
-        const StatFSIgnore::Enum  ignore,
-        struct statvfs           &fsstat)
-{
-  int rv;
-  string fullpath;
-  struct stat st;
-  struct statvfs stvfs;
-  unsigned long min_bsize;
-  unsigned long min_frsize;
-  unsigned long min_namemax;
-  map<dev_t,struct statvfs> fsstats;
+  static
+  int
+  statfs(const Branches           &branches_,
+         const char               *fusepath,
+         const StatFS::Enum        mode,
+         const StatFSIgnore::Enum  ignore,
+         struct statvfs           &fsstat)
+  {
+    int rv;
+    string fullpath;
+    struct stat st;
+    struct statvfs stvfs;
+    unsigned long min_bsize;
+    unsigned long min_frsize;
+    unsigned long min_namemax;
+    map<dev_t,struct statvfs> fsstats;
 
-  min_bsize   = std::numeric_limits<unsigned long>::max();
-  min_frsize  = std::numeric_limits<unsigned long>::max();
-  min_namemax = std::numeric_limits<unsigned long>::max();
-  for(size_t i = 0, ei = branches_.size(); i < ei; i++)
-    {
-      fullpath = ((mode == StatFS::FULL) ?
-                  fs::path::make(&branches_[i].path,fusepath) :
-                  branches_[i].path);
+    min_bsize   = std::numeric_limits<unsigned long>::max();
+    min_frsize  = std::numeric_limits<unsigned long>::max();
+    min_namemax = std::numeric_limits<unsigned long>::max();
+    for(size_t i = 0, ei = branches_.size(); i < ei; i++)
+      {
+        fullpath = ((mode == StatFS::FULL) ?
+                    fs::path::make(&branches_[i].path,fusepath) :
+                    branches_[i].path);
 
-      rv = fs::lstat(fullpath,st);
-      if(rv == -1)
-        continue;
+        rv = fs::lstat(fullpath,st);
+        if(rv == -1)
+          continue;
 
-      rv = fs::lstatvfs(fullpath,stvfs);
-      if(rv == -1)
-        continue;
+        rv = fs::lstatvfs(fullpath,stvfs);
+        if(rv == -1)
+          continue;
 
-      if(stvfs.f_bsize   && (min_bsize   > stvfs.f_bsize))
-        min_bsize = stvfs.f_bsize;
-      if(stvfs.f_frsize  && (min_frsize  > stvfs.f_frsize))
-        min_frsize = stvfs.f_frsize;
-      if(stvfs.f_namemax && (min_namemax > stvfs.f_namemax))
-        min_namemax = stvfs.f_namemax;
+        if(stvfs.f_bsize   && (min_bsize   > stvfs.f_bsize))
+          min_bsize = stvfs.f_bsize;
+        if(stvfs.f_frsize  && (min_frsize  > stvfs.f_frsize))
+          min_frsize = stvfs.f_frsize;
+        if(stvfs.f_namemax && (min_namemax > stvfs.f_namemax))
+          min_namemax = stvfs.f_namemax;
 
-      if(_should_ignore(ignore,&branches_[i],StatVFS::readonly(stvfs)))
-        {
-          stvfs.f_bavail = 0;
-          stvfs.f_favail = 0;
-        }
+        if(local::should_ignore(ignore,&branches_[i],StatVFS::readonly(stvfs)))
+          {
+            stvfs.f_bavail = 0;
+            stvfs.f_favail = 0;
+          }
 
-      fsstats.insert(std::make_pair(st.st_dev,stvfs));
-    }
+        fsstats.insert(std::make_pair(st.st_dev,stvfs));
+      }
 
-  map<dev_t,struct statvfs>::iterator iter    = fsstats.begin();
-  map<dev_t,struct statvfs>::iterator enditer = fsstats.end();
-  if(iter != enditer)
-    {
-      fsstat = iter->second;
-      _normalize_statvfs(&fsstat,min_bsize,min_frsize,min_namemax);
+    map<dev_t,struct statvfs>::iterator iter    = fsstats.begin();
+    map<dev_t,struct statvfs>::iterator enditer = fsstats.end();
+    if(iter != enditer)
+      {
+        fsstat = iter->second;
+        local::normalize_statvfs(&fsstat,min_bsize,min_frsize,min_namemax);
 
-      for(++iter; iter != enditer; ++iter)
-        {
-          _normalize_statvfs(&iter->second,min_bsize,min_frsize,min_namemax);
-          _merge_statvfs(&fsstat,&iter->second);
-        }
-    }
+        for(++iter; iter != enditer; ++iter)
+          {
+            local::normalize_statvfs(&iter->second,min_bsize,min_frsize,min_namemax);
+            local::merge_statvfs(&fsstat,&iter->second);
+          }
+      }
 
-  return 0;
+    return 0;
+  }
 }
 
 namespace mergerfs
@@ -158,11 +161,11 @@ namespace mergerfs
       const ugid::Set          ugid(fc->uid,fc->gid);
       const rwlock::ReadGuard  readlock(&config.branches_lock);
 
-      return _statfs(config.branches,
-                     fusepath,
-                     config.statfs,
-                     config.statfs_ignore,
-                     *stat);
+      return local::statfs(config.branches,
+                           fusepath,
+                           config.statfs,
+                           config.statfs_ignore,
+                           *stat);
     }
   }
 }
