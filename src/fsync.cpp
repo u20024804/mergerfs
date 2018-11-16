@@ -14,27 +14,30 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
+#include "errno.hpp"
+#include "fileinfo.hpp"
+#include "fs_base_fsync.hpp"
+
 #include <fuse.h>
 
 #include <string>
 #include <vector>
 
-#include "errno.hpp"
-#include "fileinfo.hpp"
-#include "fs_base_fsync.hpp"
-
-static
-int
-_fsync(const int fd,
-       const int isdatasync)
+namespace local
 {
-  int rv;
+  static
+  int
+  fsync(const int fd,
+        const int isdatasync)
+  {
+    int rv;
 
-  rv = (isdatasync ?
-        fs::fdatasync(fd) :
-        fs::fsync(fd));
+    rv = (isdatasync ?
+          fs::fdatasync(fd) :
+          fs::fsync(fd));
 
-  return ((rv == -1) ? -errno : 0);
+    return ((rv == -1) ? -errno : 0);
+  }
 }
 
 namespace mergerfs
@@ -48,7 +51,7 @@ namespace mergerfs
     {
       FileInfo *fi = reinterpret_cast<FileInfo*>(ffi->fh);
 
-      return ::_fsync(fi->fd,isdatasync);
+      return local::fsync(fi->fd,isdatasync);
     }
   }
 }

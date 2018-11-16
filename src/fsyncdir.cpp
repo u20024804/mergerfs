@@ -14,26 +14,29 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
+#include "errno.hpp"
+#include "dirinfo.hpp"
+#include "fs_base_fsync.hpp"
+
 #include <fuse.h>
 
 #include <string>
 #include <vector>
 
-#include "errno.hpp"
-#include "dirinfo.hpp"
-#include "fs_base_fsync.hpp"
-
-static
-int
-_fsyncdir(const DirInfo *di,
-          const int      isdatasync)
+namespace local
 {
-  int rv;
+  static
+  int
+  fsyncdir(const DirInfo *di,
+           const int      isdatasync)
+  {
+    int rv;
 
-  rv    = -1;
-  errno = ENOSYS;
+    rv    = -1;
+    errno = ENOSYS;
 
-  return ((rv == -1) ? -errno : 0);
+    return ((rv == -1) ? -errno : 0);
+  }
 }
 
 namespace mergerfs
@@ -47,7 +50,7 @@ namespace mergerfs
     {
       DirInfo *di = reinterpret_cast<DirInfo*>(ffi->fh);
 
-      return ::_fsyncdir(di,isdatasync);
+      return local::fsyncdir(di,isdatasync);
     }
   }
 }
