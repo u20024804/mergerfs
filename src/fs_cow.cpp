@@ -16,45 +16,46 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#include "fs_clonefile.hpp"
-#include "fs_mktemp.hpp"
-
+#include "errno.h"
 #include "fs_base_close.hpp"
 #include "fs_base_open.hpp"
 #include "fs_base_rename.hpp"
 #include "fs_base_stat.hpp"
 #include "fs_base_unlink.hpp"
+#include "fs_clonefile.hpp"
+#include "fs_mktemp.hpp"
 
-#include <errno.h>
+#include <string>
+
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
 
-#include <string>
-
 using std::string;
 
-static
-int
-cleanup_on_error(const int     src_fd_,
-                 const int     dst_fd_       = -1,
-                 const string &dst_fullpath_ = string())
+namespace local
 {
-  int error = errno;
+  static
+  int
+  cleanup_on_error(const int     src_fd_,
+                   const int     dst_fd_       = -1,
+                   const string &dst_fullpath_ = string())
+  {
+    int error = errno;
 
-  if(src_fd_ >= 0)
-    fs::close(src_fd_);
-  if(dst_fd_ >= 0)
-    fs::close(dst_fd_);
-  if(!dst_fullpath_.empty())
-    fs::unlink(dst_fullpath_);
+    if(src_fd_ >= 0)
+      fs::close(src_fd_);
+    if(dst_fd_ >= 0)
+      fs::close(dst_fd_);
+    if(!dst_fullpath_.empty())
+      fs::unlink(dst_fullpath_);
 
-  errno = error;
+    errno = error;
 
-  return -1;
+    return -1;
+  }
 }
-
 
 namespace fs
 {
@@ -99,15 +100,15 @@ namespace fs
 
       dst_fd = fs::mktemp(dst_fullpath,O_WRONLY|O_LARGEFILE);
       if(dst_fd == -1)
-        return cleanup_on_error(src_fd);
+        return local::cleanup_on_error(src_fd);
 
       rv = fs::clonefile(src_fd,dst_fd);
       if(rv == -1)
-        return cleanup_on_error(src_fd,dst_fd,dst_fullpath);
+        return local::cleanup_on_error(src_fd,dst_fd,dst_fullpath);
 
       rv = fs::rename(dst_fullpath,src_fullpath_);
       if(rv == -1)
-        return cleanup_on_error(src_fd,dst_fd,dst_fullpath);
+        return local::cleanup_on_error(src_fd,dst_fd,dst_fullpath);
 
       fs::close(src_fd);
       fs::close(dst_fd);

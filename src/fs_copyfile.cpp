@@ -24,69 +24,72 @@
 
 using std::vector;
 
-static
-int
-writen(const int     fd_,
-       const char   *buf_,
-       const size_t  count_)
+namespace local
 {
-  size_t nleft;
-  ssize_t nwritten;
+  static
+  int
+  writen(const int     fd_,
+         const char   *buf_,
+         const size_t  count_)
+  {
+    size_t nleft;
+    ssize_t nwritten;
 
-  nleft = count_;
-  do
-    {
-      nwritten = fs::write(fd_,buf_,nleft);
-      if((nwritten == -1) && (errno == EINTR))
-        continue;
-      if(nwritten == -1)
-        return -1;
+    nleft = count_;
+    do
+      {
+        nwritten = fs::write(fd_,buf_,nleft);
+        if((nwritten == -1) && (errno == EINTR))
+          continue;
+        if(nwritten == -1)
+          return -1;
 
-      nleft -= nwritten;
-      buf_  += nwritten;
-    }
-  while(nleft > 0);
+        nleft -= nwritten;
+        buf_  += nwritten;
+      }
+    while(nleft > 0);
 
-  return count_;
-}
+    return count_;
+  }
 
-static
-int
-copyfile(const int    src_fd_,
-         const int    dst_fd_,
-         const size_t count_,
-         const size_t blocksize_)
-{
-  ssize_t nr;
-  ssize_t nw;
-  ssize_t bufsize;
-  size_t  totalwritten;
-  vector<char> buf;
+  static
+  int
+  copyfile(const int    src_fd_,
+           const int    dst_fd_,
+           const size_t count_,
+           const size_t blocksize_)
+  {
+    ssize_t nr;
+    ssize_t nw;
+    ssize_t bufsize;
+    size_t  totalwritten;
+    vector<char> buf;
 
-  bufsize = (blocksize_ * 16);
-  buf.resize(bufsize);
+    bufsize = (blocksize_ * 16);
+    buf.resize(bufsize);
 
-  fs::lseek(src_fd_,0,SEEK_SET);
+    fs::lseek(src_fd_,0,SEEK_SET);
 
-  totalwritten = 0;
-  while(totalwritten < count_)
-    {
-      nr = fs::read(src_fd_,&buf[0],bufsize);
-      if(nr == 0)
-        return totalwritten;
-      if((nr == -1) && (errno == EINTR))
-        continue;
-      if(nr == -1)
-        return -1;
+    totalwritten = 0;
+    while(totalwritten < count_)
+      {
+        nr = fs::read(src_fd_,&buf[0],bufsize);
+        if(nr == 0)
+          return totalwritten;
+        if((nr == -1) && (errno == EINTR))
+          continue;
+        if(nr == -1)
+          return -1;
 
-      nw = writen(dst_fd_,&buf[0],nr);
-      if(nw == -1)
-        return -1;
+        nw = local::writen(dst_fd_,&buf[0],nr);
+        if(nw == -1)
+          return -1;
 
-      totalwritten += nw;
-    }
+        totalwritten += nw;
+      }
 
-  return totalwritten;
+    return totalwritten;
+  }
 }
 
 namespace fs
@@ -102,9 +105,9 @@ namespace fs
     if(rv == -1)
       return rv;
 
-    return ::copyfile(src_fd_,
-                      dst_fd_,
-                      st.st_size,
-                      st.st_blksize);
+    return local::copyfile(src_fd_,
+                           dst_fd_,
+                           st.st_size,
+                           st.st_blksize);
   }
 }

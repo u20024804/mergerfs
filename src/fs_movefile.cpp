@@ -14,26 +14,26 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
+#include "errno.hpp"
+#include "fs.hpp"
+#include "fs_base_close.hpp"
+#include "fs_base_mkstemp.hpp"
+#include "fs_base_open.hpp"
+#include "fs_base_rename.hpp"
+#include "fs_base_stat.hpp"
+#include "fs_base_unlink.hpp"
+#include "fs_clonefile.hpp"
+#include "fs_clonepath.hpp"
+#include "fs_path.hpp"
+
+#include <string>
+#include <vector>
+
 #include <fcntl.h>
 #include <stdlib.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
-
-#include <string>
-#include <vector>
-
-#include "errno.hpp"
-#include "fs.hpp"
-#include "fs_base_open.hpp"
-#include "fs_base_close.hpp"
-#include "fs_base_mkstemp.hpp"
-#include "fs_base_rename.hpp"
-#include "fs_base_unlink.hpp"
-#include "fs_base_stat.hpp"
-#include "fs_clonefile.hpp"
-#include "fs_clonepath.hpp"
-#include "fs_path.hpp"
 
 using std::string;
 using std::vector;

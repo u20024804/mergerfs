@@ -14,12 +14,11 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#include <stdint.h>
-
-#include <glob.h>
-
 #include <string>
 #include <vector>
+
+#include <glob.h>
+#include <stdint.h>
 
 using std::string;
 using std::vector;

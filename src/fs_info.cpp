@@ -22,9 +22,9 @@
 #include "fs_path.hpp"
 #include "statvfs_util.hpp"
 
-#include <stdint.h>
-
 #include <string>
+
+#include <stdint.h>
 
 using std::string;
 

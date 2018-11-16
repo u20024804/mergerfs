@@ -14,8 +14,6 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#include <fcntl.h>
-
 #ifdef __linux__
 # include "fs_base_fallocate_linux.icpp"
 #elif _XOPEN_SOURCE >= 600 || _POSIX_C_SOURCE >= 200112L
