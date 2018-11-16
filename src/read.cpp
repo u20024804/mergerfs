@@ -14,50 +14,53 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#include <fuse.h>
-
-#include <string.h>
-
-#include <string>
-
 #include "errno.hpp"
 #include "fileinfo.hpp"
 #include "fs_base_read.hpp"
 
-static
-inline
-int
-_read(const int     fd,
-      void         *buf,
-      const size_t  count,
-      const off_t   offset)
+#include <fuse.h>
+
+#include <string>
+
+#include <string.h>
+
+namespace local
 {
-  int rv;
+  static
+  inline
+  int
+  read(const int     fd,
+       void         *buf,
+       const size_t  count,
+       const off_t   offset)
+  {
+    int rv;
 
-  rv = fs::pread(fd,buf,count,offset);
-  if(rv == -1)
-    return -errno;
-  if(rv == 0)
-    return 0;
+    rv = fs::pread(fd,buf,count,offset);
+    if(rv == -1)
+      return -errno;
+    if(rv == 0)
+      return 0;
 
-  return count;
-}
+    return count;
+  }
 
-static
-inline
-int
-_read_direct_io(const int     fd,
-                void         *buf,
-                const size_t  count,
-                const off_t   offset)
-{
-  int rv;
+  static
+  inline
+  int
+  read_direct_io(const int     fd,
+                 void         *buf,
+                 const size_t  count,
+                 const off_t   offset)
+  {
+    int rv;
 
-  rv = fs::pread(fd,buf,count,offset);
-  if(rv == -1)
-    return -errno;
+    rv = fs::pread(fd,buf,count,offset);
+    if(rv == -1)
+      return -errno;
 
-  return rv;
+    return rv;
+  }
 }
 
 namespace mergerfs
@@ -73,7 +76,7 @@ namespace mergerfs
     {
       FileInfo *fi = reinterpret_cast<FileInfo*>(ffi->fh);
 
-      return ::_read(fi->fd,buf,count,offset);
+      return local::read(fi->fd,buf,count,offset);
     }
 
     int
@@ -85,7 +88,7 @@ namespace mergerfs
     {
       FileInfo *fi = reinterpret_cast<FileInfo*>(ffi->fh);
 
-      return ::_read_direct_io(fi->fd,buf,count,offset);
+      return local::read_direct_io(fi->fd,buf,count,offset);
     }
 
     int
