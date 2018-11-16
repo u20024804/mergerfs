@@ -14,9 +14,9 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#include <fuse.h>
-
 #include "dirinfo.hpp"
+
+#include <fuse.h>
 
 namespace mergerfs
 {
