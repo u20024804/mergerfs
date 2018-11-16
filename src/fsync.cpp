@@ -27,14 +27,14 @@ namespace local
 {
   static
   int
-  fsync(const int fd,
-        const int isdatasync)
+  fsync(const int fd_,
+        const int isdatasync_)
   {
     int rv;
 
-    rv = (isdatasync ?
-          fs::fdatasync(fd) :
-          fs::fsync(fd));
+    rv = (isdatasync_ ?
+          fs::fdatasync(fd_) :
+          fs::fsync(fd_));
 
     return ((rv == -1) ? -errno : 0);
   }
@@ -45,13 +45,13 @@ namespace mergerfs
   namespace fuse
   {
     int
-    fsync(const char     *fusepath,
-          int             isdatasync,
-          fuse_file_info *ffi)
+    fsync(const char     *fusepath_,
+          int             isdatasync_,
+          fuse_file_info *ffi_)
     {
-      FileInfo *fi = reinterpret_cast<FileInfo*>(ffi->fh);
+      FileInfo *fi = reinterpret_cast<FileInfo*>(ffi_->fh);
 
-      return local::fsync(fi->fd,isdatasync);
+      return local::fsync(fi->fd,isdatasync_);
     }
   }
 }

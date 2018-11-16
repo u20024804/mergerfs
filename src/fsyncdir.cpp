@@ -27,8 +27,8 @@ namespace local
 {
   static
   int
-  fsyncdir(const DirInfo *di,
-           const int      isdatasync)
+  fsyncdir(const DirInfo *di_,
+           const int      isdatasync_)
   {
     int rv;
 
@@ -44,13 +44,13 @@ namespace mergerfs
   namespace fuse
   {
     int
-    fsyncdir(const char     *fusepath,
-             int             isdatasync,
-             fuse_file_info *ffi)
+    fsyncdir(const char     *fusepath_,
+             int             isdatasync_,
+             fuse_file_info *ffi_)
     {
-      DirInfo *di = reinterpret_cast<DirInfo*>(ffi->fh);
+      DirInfo *di = reinterpret_cast<DirInfo*>(ffi_->fh);
 
-      return local::fsyncdir(di,isdatasync);
+      return local::fsyncdir(di,isdatasync_);
     }
   }
 }
