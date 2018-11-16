@@ -14,12 +14,12 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#include <string>
-#include <vector>
-
 #include "buildvector.hpp"
 #include "category.hpp"
 #include "fusefunc.hpp"
+
+#include <string>
+#include <vector>
 
 #define FUSEFUNC(X,Y) FuseFunc(FuseFunc::Enum::X,#X,Category::Enum::Y)
 
@@ -73,24 +73,26 @@ namespace mergerfs
   const FuseFunc &FuseFunc::unlink      = FuseFunc::fusefuncs[FuseFunc::Enum::unlink];
   const FuseFunc &FuseFunc::utimens     = FuseFunc::fusefuncs[FuseFunc::Enum::utimens];
 
-  const FuseFunc&
-  FuseFunc::find(const std::string &str)
+  const
+  FuseFunc&
+  FuseFunc::find(const std::string &str_)
   {
     for(int i = Enum::BEGIN; i != Enum::END; ++i)
       {
-        if(fusefuncs[i] == str)
+        if(fusefuncs[i] == str_)
           return fusefuncs[i];
       }
 
     return invalid;
   }
 
-  const FuseFunc&
-  FuseFunc::find(const FuseFunc::Enum::Type i)
+  const
+  FuseFunc&
+  FuseFunc::find(const FuseFunc::Enum::Type i_)
   {
-    if(i >= FuseFunc::Enum::BEGIN &&
-       i  < FuseFunc::Enum::END)
-      return fusefuncs[i];
+    if(i_ >= FuseFunc::Enum::BEGIN &&
+       i_  < FuseFunc::Enum::END)
+      return fusefuncs[i_];
 
     return invalid;
   }
