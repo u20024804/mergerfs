@@ -133,10 +133,10 @@ namespace mergerfs
             const timespec  ts_[2],
             fuse_file_info *ffi_)
     {
-      if(ffi_ != NULL)
-        return local::futimens(ffi_,ts_);
+      if(ffi_ == NULL)
+        return local::utimens(fusepath_,ts_);
 
-      return local::utimens(fusepath_,ts_);
+      return local::futimens(ffi_,ts_);
     }
   }
 }
