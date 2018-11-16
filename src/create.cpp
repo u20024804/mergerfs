@@ -33,77 +33,80 @@ using std::string;
 using std::vector;
 using namespace mergerfs;
 
-static
-int
-_create_core(const string &fullpath,
-             mode_t        mode,
-             const mode_t  umask,
-             const int     flags)
+namespace local
 {
-  if(!fs::acl::dir_has_defaults(fullpath))
-    mode &= ~umask;
+  static
+  int
+  create_core(const string &fullpath,
+              mode_t        mode,
+              const mode_t  umask,
+              const int     flags)
+  {
+    if(!fs::acl::dir_has_defaults(fullpath))
+      mode &= ~umask;
 
-  return fs::open(fullpath,flags,mode);
-}
+    return fs::open(fullpath,flags,mode);
+  }
 
-static
-int
-_create_core(const string &createpath,
-             const char   *fusepath,
-             const mode_t  mode,
-             const mode_t  umask,
-             const int     flags,
-             uint64_t     &fh)
-{
-  int rv;
-  string fullpath;
+  static
+  int
+  create_core(const string &createpath,
+              const char   *fusepath,
+              const mode_t  mode,
+              const mode_t  umask,
+              const int     flags,
+              uint64_t     &fh)
+  {
+    int rv;
+    string fullpath;
 
-  fs::path::make(&createpath,fusepath,fullpath);
+    fs::path::make(&createpath,fusepath,fullpath);
 
-  rv = _create_core(fullpath,mode,umask,flags);
-  if(rv == -1)
-    return -errno;
+    rv = local::create_core(fullpath,mode,umask,flags);
+    if(rv == -1)
+      return -errno;
 
-  fh = reinterpret_cast<uint64_t>(new FileInfo(rv,fusepath));
+    fh = reinterpret_cast<uint64_t>(new FileInfo(rv,fusepath));
 
-  return 0;
-}
+    return 0;
+  }
 
-static
-int
-_create(Policy::Func::Search  searchFunc,
-        Policy::Func::Create  createFunc,
-        const Branches       &branches_,
-        const uint64_t        minfreespace,
-        const char           *fusepath,
-        const mode_t          mode,
-        const mode_t          umask,
-        const int             flags,
-        uint64_t             &fh)
-{
-  int rv;
-  string fullpath;
-  string fusedirpath;
-  vector<const string*> createpaths;
-  vector<const string*> existingpaths;
+  static
+  int
+  create(Policy::Func::Search  searchFunc,
+         Policy::Func::Create  createFunc,
+         const Branches       &branches_,
+         const uint64_t        minfreespace,
+         const char           *fusepath,
+         const mode_t          mode,
+         const mode_t          umask,
+         const int             flags,
+         uint64_t             &fh)
+  {
+    int rv;
+    string fullpath;
+    string fusedirpath;
+    vector<const string*> createpaths;
+    vector<const string*> existingpaths;
 
-  fusedirpath = fs::path::dirname(fusepath);
+    fusedirpath = fs::path::dirname(fusepath);
 
-  rv = searchFunc(branches_,fusedirpath,minfreespace,existingpaths);
-  if(rv == -1)
-    return -errno;
+    rv = searchFunc(branches_,fusedirpath,minfreespace,existingpaths);
+    if(rv == -1)
+      return -errno;
 
-  rv = createFunc(branches_,fusedirpath,minfreespace,createpaths);
-  if(rv == -1)
-    return -errno;
+    rv = createFunc(branches_,fusedirpath,minfreespace,createpaths);
+    if(rv == -1)
+      return -errno;
 
-  rv = fs::clonepath_as_root(*existingpaths[0],*createpaths[0],fusedirpath);
-  if(rv == -1)
-    return -errno;
+    rv = fs::clonepath_as_root(*existingpaths[0],*createpaths[0],fusedirpath);
+    if(rv == -1)
+      return -errno;
 
-  return _create_core(*createpaths[0],
-                      fusepath,
-                      mode,umask,flags,fh);
+    return local::create_core(*createpaths[0],
+                              fusepath,
+                              mode,umask,flags,fh);
+  }
 }
 
 namespace mergerfs
@@ -120,15 +123,15 @@ namespace mergerfs
       const ugid::Set          ugid(fc->uid,fc->gid);
       const rwlock::ReadGuard  readlock(&config.branches_lock);
 
-      return _create(config.getattr,
-                     config.create,
-                     config.branches,
-                     config.minfreespace,
-                     fusepath,
-                     mode,
-                     fc->umask,
-                     ffi->flags,
-                     ffi->fh);
+      return local::create(config.getattr,
+                           config.create,
+                           config.branches,
+                           config.minfreespace,
+                           fusepath,
+                           mode,
+                           fc->umask,
+                           ffi->flags,
+                           ffi->fh);
     }
   }
 }
