@@ -80,7 +80,7 @@ namespace local
     if(rv == -1)
       return -errno;
 
-    fs::path::make(basepaths[0],fusepath,fullpath);
+    fullpath = fs::path::make(basepaths[0],fusepath);
 
     rv = fs::lstat(fullpath,*st);
     if(rv == -1)
@@ -146,6 +146,9 @@ namespace local
     if(rv == -1)
       return -errno;
 
+    // if(symlinkify && symlinkify::can_be_symlink(*st,symlinkify_timeout))
+    //   st->st_mode = symlinkify::convert(st->st_mode);
+    
     fs::inode::recompute(*st_);
 
     return 0;
