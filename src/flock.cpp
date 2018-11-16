@@ -14,22 +14,25 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#include <fuse.h>
-
 #include "errno.hpp"
 #include "fileinfo.hpp"
 #include "fs_base_flock.hpp"
 
-static
-int
-_flock(const int fd,
-       const int operation)
+#include <fuse.h>
+
+namespace local
 {
-  int rv;
+  static
+  int
+  flock(const int fd_,
+        const int operation_)
+  {
+    int rv;
 
-  rv = fs::flock(fd,operation);
+    rv = fs::flock(fd_,operation_);
 
-  return ((rv == -1) ? -errno : 0);
+    return ((rv == -1) ? -errno : 0);
+  }
 }
 
 namespace mergerfs
@@ -37,13 +40,13 @@ namespace mergerfs
   namespace fuse
   {
     int
-    flock(const char     *fusepath,
-          fuse_file_info *ffi,
-          int             op)
+    flock(const char     *fusepath_,
+          fuse_file_info *ffi_,
+          int             op_)
     {
-      FileInfo* fi = reinterpret_cast<FileInfo*>(ffi->fh);
+      FileInfo* fi = reinterpret_cast<FileInfo*>(ffi_->fh);
 
-      return _flock(fi->fd,op);
+      return local::flock(fi->fd,op_);
     }
   }
 }

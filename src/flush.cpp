@@ -21,19 +21,22 @@
 
 #include <fuse.h>
 
-static
-int
-_flush(const int fd)
+namespace local
 {
-  int rv;
+  static
+  int
+  flush(const int fd_)
+  {
+    int rv;
 
-  rv = fs::dup(fd);
-  if(rv == -1)
-    errno = EIO;
-  else
-    rv = fs::close(rv);
+    rv = fs::dup(fd_);
+    if(rv == -1)
+      errno = EIO;
+    else
+      rv = fs::close(rv);
 
-  return ((rv == -1) ? -errno : 0);
+    return ((rv == -1) ? -errno : 0);
+  }
 }
 
 namespace mergerfs
@@ -41,12 +44,12 @@ namespace mergerfs
   namespace fuse
   {
     int
-    flush(const char     *fusepath,
-          fuse_file_info *ffi)
+    flush(const char     *fusepath_,
+          fuse_file_info *ffi_)
     {
-      FileInfo *fi = reinterpret_cast<FileInfo*>(ffi->fh);
+      FileInfo *fi = reinterpret_cast<FileInfo*>(ffi_->fh);
 
-      return ::_flush(fi->fd);
+      return local::flush(fi->fd);
     }
   }
 }

@@ -60,7 +60,7 @@ namespace local
     int rv;
     string fullpath;
 
-    fs::path::make(&createpath,fusepath,fullpath);
+    fullpath = fs::path::make(&createpath,fusepath);
 
     rv = local::create_core(fullpath,mode,umask,flags);
     if(rv == -1)
