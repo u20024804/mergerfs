@@ -30,9 +30,7 @@
 
 using std::string;
 using std::vector;
-using mergerfs::Policy;
-using mergerfs::Config;
-using mergerfs::rwlock::ReadGuard;
+using namespace mergerfs;
 
 namespace local
 {
@@ -117,10 +115,10 @@ namespace local
         const uid_t   uid_,
         const gid_t   gid_)
   {
-    const fuse_context *fc     = fuse_get_context();
-    const Config       &config = Config::get(fc);
-    const ugid::Set     ugid(fc->uid,fc->gid);
-    const ReadGuard     readlock(&config.branches_lock);
+    const fuse_context      *fc     = fuse_get_context();
+    const Config            &config = Config::get(fc);
+    const ugid::Set          ugid(fc->uid,fc->gid);
+    const rwlock::ReadGuard  readlock(&config.branches_lock);
 
     return local::chown(config.chown,
                         config.branches,
