@@ -14,13 +14,6 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#include <fuse.h>
-
-#include <unistd.h>
-
-#include <string>
-#include <vector>
-
 #include "config.hpp"
 #include "errno.hpp"
 #include "fs_base_unlink.hpp"
@@ -29,57 +22,67 @@
 #include "rwlock.hpp"
 #include "ugid.hpp"
 
+#include <fuse.h>
+
+#include <string>
+#include <vector>
+
+#include <unistd.h>
+
 using std::string;
 using std::vector;
 using mergerfs::Policy;
 
-static
-int
-_unlink_loop_core(const string *basepath,
-                  const char   *fusepath,
-                  const int     error)
+namespace local
 {
-  int rv;
-  string fullpath;
+  static
+  int
+  unlink_loop_core(const string *basepath,
+                   const char   *fusepath,
+                   const int     error)
+  {
+    int rv;
+    string fullpath;
 
-  fs::path::make(basepath,fusepath,fullpath);
+    fs::path::make(basepath,fusepath,fullpath);
 
-  rv = fs::unlink(fullpath);
+    rv = fs::unlink(fullpath);
 
-  return error::calc(rv,error,errno);
-}
+    return error::calc(rv,error,errno);
+  }
 
-static
-int
-_unlink_loop(const vector<const string*> &basepaths,
-             const char *fusepath)
-{
-  int error;
+  static
+  int
+  unlink_loop(const vector<const string*> &basepaths,
+              const char                  *fusepath)
+  {
+    int error;
 
-  error = -1;
-  for(size_t i = 0, ei = basepaths.size(); i != ei; i++)
-    {
-      error = _unlink_loop_core(basepaths[i],fusepath,error);
-    }
+    error = -1;
+    for(size_t i = 0, ei = basepaths.size(); i != ei; i++)
+      {
+        error = local::unlink_loop_core(basepaths[i],fusepath,error);
+      }
 
-  return -error;
-}
+    return -error;
+  }
 
-static
-int
-_unlink(Policy::Func::Action  actionFunc,
-        const Branches       &branches_,
-        const uint64_t        minfreespace,
-        const char           *fusepath)
-{
-  int rv;
-  vector<const string*> basepaths;
+  static
+  int
+  unlink(Policy::Func::Action  actionFunc,
+         const Branches       &branches_,
+         const uint64_t        minfreespace,
+         const char           *fusepath)
+  {
+    int rv;
+    vector<const string*> basepaths;
 
-  rv = actionFunc(branches_,fusepath,minfreespace,basepaths);
-  if(rv == -1)
-    return -errno;
+    rv = actionFunc(branches_,fusepath,minfreespace,basepaths);
+    if(rv == -1)
+      return -errno;
 
-  return _unlink_loop(basepaths,fusepath);
+    return local::unlink_loop(basepaths,fusepath);
+  }
 }
 
 namespace mergerfs
@@ -94,10 +97,10 @@ namespace mergerfs
       const ugid::Set          ugid(fc->uid,fc->gid);
       const rwlock::ReadGuard  readlock(&config.branches_lock);
 
-      return _unlink(config.unlink,
-                     config.branches,
-                     config.minfreespace,
-                     fusepath);
+      return local::unlink(config.unlink,
+                           config.branches,
+                           config.minfreespace,
+                           fusepath);
     }
   }
 }

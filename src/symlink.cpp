@@ -14,13 +14,6 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#include <fuse.h>
-
-#include <sys/types.h>
-#include <unistd.h>
-
-#include <string>
-
 #include "config.hpp"
 #include "errno.hpp"
 #include "fs_base_symlink.hpp"
@@ -30,80 +23,90 @@
 #include "rwlock.hpp"
 #include "ugid.hpp"
 
+#include <fuse.h>
+
+#include <string>
+
+#include <sys/types.h>
+#include <unistd.h>
+
 using std::string;
 using std::vector;
 using namespace mergerfs;
 
-static
-int
-_symlink_loop_core(const string &newbasepath,
-                   const char   *oldpath,
-                   const char   *newpath,
-                   const int     error)
+namespace local
 {
-  int rv;
-  string fullnewpath;
+  static
+  int
+  symlink_loop_core(const string &newbasepath,
+                    const char   *oldpath,
+                    const char   *newpath,
+                    const int     error)
+  {
+    int rv;
+    string fullnewpath;
 
-  fs::path::make(&newbasepath,newpath,fullnewpath);
+    fs::path::make(&newbasepath,newpath,fullnewpath);
 
-  rv = fs::symlink(oldpath,fullnewpath);
+    rv = fs::symlink(oldpath,fullnewpath);
 
-  return error::calc(rv,error,errno);
-}
+    return error::calc(rv,error,errno);
+  }
 
-static
-int
-_symlink_loop(const string                &existingpath,
-              const vector<const string*>  newbasepaths,
-              const char                  *oldpath,
-              const char                  *newpath,
-              const string                &newdirpath)
-{
-  int rv;
-  int error;
+  static
+  int
+  symlink_loop(const string                &existingpath,
+               const vector<const string*>  newbasepaths,
+               const char                  *oldpath,
+               const char                  *newpath,
+               const string                &newdirpath)
+  {
+    int rv;
+    int error;
 
-  error = -1;
-  for(size_t i = 0, ei = newbasepaths.size(); i != ei; i++)
-    {
-      rv = fs::clonepath_as_root(existingpath,*newbasepaths[i],newdirpath);
-      if(rv == -1)
-        error = error::calc(rv,error,errno);
-      else
-        error = _symlink_loop_core(*newbasepaths[i],
-                                   oldpath,
-                                   newpath,
-                                   error);
-    }
+    error = -1;
+    for(size_t i = 0, ei = newbasepaths.size(); i != ei; i++)
+      {
+        rv = fs::clonepath_as_root(existingpath,*newbasepaths[i],newdirpath);
+        if(rv == -1)
+          error = error::calc(rv,error,errno);
+        else
+          error = local::symlink_loop_core(*newbasepaths[i],
+                                           oldpath,
+                                           newpath,
+                                           error);
+      }
 
-  return -error;
-}
+    return -error;
+  }
 
-static
-int
-_symlink(Policy::Func::Search  searchFunc,
-         Policy::Func::Create  createFunc,
-         const Branches       &branches_,
-         const uint64_t        minfreespace,
-         const char           *oldpath,
-         const char           *newpath)
-{
-  int rv;
-  string newdirpath;
-  vector<const string*> newbasepaths;
-  vector<const string*> existingpaths;
+  static
+  int
+  symlink(Policy::Func::Search  searchFunc,
+          Policy::Func::Create  createFunc,
+          const Branches       &branches_,
+          const uint64_t        minfreespace,
+          const char           *oldpath,
+          const char           *newpath)
+  {
+    int rv;
+    string newdirpath;
+    vector<const string*> newbasepaths;
+    vector<const string*> existingpaths;
 
-  newdirpath = fs::path::dirname(newpath);
+    newdirpath = fs::path::dirname(newpath);
 
-  rv = searchFunc(branches_,newdirpath,minfreespace,existingpaths);
-  if(rv == -1)
-    return -errno;
+    rv = searchFunc(branches_,newdirpath,minfreespace,existingpaths);
+    if(rv == -1)
+      return -errno;
 
-  rv = createFunc(branches_,newdirpath,minfreespace,newbasepaths);
-  if(rv == -1)
-    return -errno;
+    rv = createFunc(branches_,newdirpath,minfreespace,newbasepaths);
+    if(rv == -1)
+      return -errno;
 
-  return _symlink_loop(*existingpaths[0],newbasepaths,
-                       oldpath,newpath,newdirpath);
+    return local::symlink_loop(*existingpaths[0],newbasepaths,
+                               oldpath,newpath,newdirpath);
+  }
 }
 
 namespace mergerfs
@@ -119,12 +122,12 @@ namespace mergerfs
       const ugid::Set          ugid(fc->uid,fc->gid);
       const rwlock::ReadGuard  readlock(&config.branches_lock);
 
-      return _symlink(config.getattr,
-                      config.symlink,
-                      config.branches,
-                      config.minfreespace,
-                      oldpath,
-                      newpath);
+      return local::symlink(config.getattr,
+                            config.symlink,
+                            config.branches,
+                            config.minfreespace,
+                            oldpath,
+                            newpath);
     }
   }
 }
