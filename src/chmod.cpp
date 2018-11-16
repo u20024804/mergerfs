@@ -90,18 +90,17 @@ namespace local
 
   static
   int
-  chmod(const uid_t   uid_,
-        const gid_t   gid_,
-        const Config *config_,
-        const char   *fusepath_,
+  chmod(const char   *fusepath_,
         const mode_t  mode_)
   {
-    const ugid::Set ugid(uid_,gid_);
-    const ReadGuard readlock(&config_->branches_lock);
+    const fuse_context *fc     = fuse_get_context();
+    const Config       &config = Config::get(fc);
+    const ugid::Set ugid(fc->uid,fc->gid);
+    const ReadGuard readlock(&config.branches_lock);
 
-    return local::chmod(config_->chmod,
-                        config_->branches,
-                        config_->minfreespace,
+    return local::chmod(config.chmod,
+                        config.branches,
+                        config.minfreespace,
                         fusepath_,
                         mode_);
   }
@@ -131,17 +130,10 @@ namespace mergerfs
           mode_t          mode_,
           fuse_file_info *ffi_)
     {
-      const fuse_context *fc     = fuse_get_context();
-      const Config       &config = Config::get(fc);
+      if(ffi_ == NULL)
+        return local::chmod(fusepath_,mode_);
 
-      if((fusepath_ == NULL) && (ffi_ != NULL))
-        return local::fchmod(ffi_,mode_);
-
-      return local::chmod(fc->uid,
-                          fc->gid,
-                          &config,
-                          fusepath_,
-                          mode_);
+      return local::fchmod(ffi_,mode_);
     }
   }
 }

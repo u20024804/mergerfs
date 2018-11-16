@@ -161,10 +161,10 @@ namespace mergerfs
             struct stat    *st_,
             fuse_file_info *ffi_)
     {
-      if((fusepath_ == NULL) && (ffi_ != NULL))
-        return local::fgetattr(ffi_,st_);
+      if(ffi_ == NULL)
+        return local::getattr(fusepath_,st_);
 
-      return local::getattr(fusepath_,st_);
+      return local::fgetattr(ffi_,st_);
     }
   }
 }

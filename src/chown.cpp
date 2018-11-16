@@ -141,10 +141,10 @@ namespace mergerfs
           gid_t           gid_,
           fuse_file_info *ffi_)
     {
-      if((fusepath_ == NULL) && (ffi_ != NULL))
-        return local::fchown(ffi_,uid_,gid_);
+      if(ffi_ == NULL)
+        return local::chown(fusepath_,uid_,gid_);
 
-      return local::chown(fusepath_,uid_,gid_);
+      return local::fchown(ffi_,uid_,gid_);
     }
   }
 }

@@ -20,18 +20,21 @@
 
 #include <fuse.h>
 
-static
-int
-_fallocate(const int   fd,
-           const int   mode,
-           const off_t offset,
-           const off_t len)
+namespace local
 {
-  int rv;
+  static
+  int
+  fallocate(const int   fd_,
+            const int   mode_,
+            const off_t offset_,
+            const off_t len_)
+  {
+    int rv;
 
-  rv = fs::fallocate(fd,mode,offset,len);
+    rv = fs::fallocate(fd_,mode_,offset_,len_);
 
-  return ((rv == -1) ? -errno : 0);
+    return ((rv == -1) ? -errno : 0);
+  }
 }
 
 namespace mergerfs
@@ -39,18 +42,18 @@ namespace mergerfs
   namespace fuse
   {
     int
-    fallocate(const char     *fusepath,
-              int             mode,
-              off_t           offset,
-              off_t           len,
-              fuse_file_info *ffi)
+    fallocate(const char     *fusepath_,
+              int             mode_,
+              off_t           offset_,
+              off_t           len_,
+              fuse_file_info *ffi_)
     {
-      FileInfo *fi = reinterpret_cast<FileInfo*>(ffi->fh);
+      FileInfo *fi = reinterpret_cast<FileInfo*>(ffi_->fh);
 
-      return _fallocate(fi->fd,
-                        mode,
-                        offset,
-                        len);
+      return local::fallocate(fi->fd,
+                              mode_,
+                              offset_,
+                              len_);
     }
   }
 }
