@@ -18,3 +18,6 @@ obj/obj-stamp:
 
 obj/%.o: lib/%.c
 	$(CC) $(CFLAGS) -c $< -o $@
+
+clean:
+	rm -rf obj

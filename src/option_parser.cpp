@@ -49,12 +49,12 @@ enum
 
 static
 void
-set_option(fuse_args         *args_,
-           const std::string *option_)
+set_option(fuse_args    *args_,
+           const string &option_)
 {
   string option;
 
-  option = "-o" + *option_;
+  option = "-o" + option_;
 
   fuse_opt_insert_arg(args_,1,option.c_str());
 }
@@ -67,23 +67,23 @@ set_kv_option(fuse_args  *args_,
 {
   std::string option;
 
-  option  = *key_;
+  option  = key_;
   option += '=';
-  option += *value_;
+  option += value_;
 
-  set_option(args_,&option);
+  set_option(args_,option);
 }
 
 static
 void
 set_fsname(fuse_args      *args_,
-           const Branches *branches_)
+           const Branches &branches_)
 {
   vector<string> branches;
 
-  branches_->to_paths(branches);
+  branches_.to_paths(branches);
 
-  if(branches_->size() > 0)
+  if(branches_.size() > 0)
     {
       std::string fsname;
 
@@ -102,12 +102,12 @@ set_subtype(fuse_args *args_)
 
 static
 int
-parse_and_process(const std::string *value_,
-                  uint64_t          *uint64_)
+parse_and_process(const string &value_,
+                  uint64_t     *uint64_)
 {
   int rv;
 
-  rv = num::to_uint64_t(value_,uint64_);
+  rv = num::to_uint64_t(&value_,uint64_);
   if(rv == -1)
     return 1;
 
@@ -116,12 +116,12 @@ parse_and_process(const std::string *value_,
 
 static
 int
-parse_and_process(const std::string *value_,
-                  double            *d_)
+parse_and_process(const string &value_,
+                  double       *d_)
 {
   int rv;
 
-  rv = num::to_double(value_,d_);
+  rv = num::to_double(&value_,d_);
   if(rv == -1)
     return 1;
 
@@ -130,12 +130,12 @@ parse_and_process(const std::string *value_,
 
 static
 int
-parse_and_process(const std::string *value_,
-                  time_t            *time_)
+parse_and_process(const string &value_,
+                  time_t       *time_)
 {
   int rv;
 
-  rv = num::to_time_t(value_,time_);
+  rv = num::to_time_t(&value_,time_);
   if(rv == -1)
     return 1;
 
@@ -144,12 +144,12 @@ parse_and_process(const std::string *value_,
 
 static
 int
-parse_and_process(const std::string *value_,
-                  bool              *boolean_)
+parse_and_process(const string &value_,
+                  bool         *boolean_)
 {
-  if(*value_ == "false")
+  if(value_ == "false")
     *boolean_ = false;
-  ef(*value_ == "true")
+  ef(value_ == "true")
     *boolean_ = true;
   else
     return 1;
@@ -159,14 +159,14 @@ parse_and_process(const std::string *value_,
 
 static
 int
-parse_and_process_errno(const std::string *value_,
-                        int               *errno_)
+parse_and_process_errno(const string &value_,
+                        int          *errno_)
 {
-  if(*value_ == "passthrough")
+  if(value_ == "passthrough")
     *errno_ = 0;
-  ef(*value_ == "nosys")
+  ef(value_ == "nosys")
     *errno_ = ENOSYS;
-  ef(*value_ == "noattr")
+  ef(value_ == "noattr")
     *errno_ = ENOATTR;
   else
     return 1;
@@ -176,12 +176,12 @@ parse_and_process_errno(const std::string *value_,
 
 static
 int
-parse_and_process_statfs(const std::string    *value_,
+parse_and_process_statfs(const string         &value_,
                          Config::StatFS::Enum *enum_)
 {
-  if(*value_ == "base")
+  if(value_ == "base")
     *enum_ = Config::StatFS::BASE;
-  ef(*value_ == "full")
+  ef(value_ == "full")
     *enum_ = Config::StatFS::FULL;
   else
     return 1;
@@ -191,14 +191,14 @@ parse_and_process_statfs(const std::string    *value_,
 
 static
 int
-parse_and_process_statfsignore(const std::string          *value_,
+parse_and_process_statfsignore(const string               &value_,
                                Config::StatFSIgnore::Enum *enum_)
 {
-  if(*value_ == "none")
+  if(value_ == "none")
     *enum_ = Config::StatFSIgnore::NONE;
-  ef(*value_ == "ro")
+  ef(value_ == "ro")
     *enum_ = Config::StatFSIgnore::RO;
-  ef(*value_ == "nc")
+  ef(value_ == "nc")
     *enum_ = Config::StatFSIgnore::NC;
   else
     return 1;
@@ -208,16 +208,16 @@ parse_and_process_statfsignore(const std::string          *value_,
 
 static
 int
-parse_and_process_arg(Config            *config_,
-                      const std::string *arg_)
+parse_and_process_arg(Config       *config_,
+                      const string &arg_)
 {
-  if(*arg_ == "direct_io")
+  if(arg_ == "direct_io")
     config_->direct_io = true;
-  ef(*arg_ == "hard_remove")
+  ef(arg_ == "hard_remove")
     config_->hard_remove = true;
-  ef(*arg_ == "kernel_cache")
+  ef(arg_ == "kernel_cache")
     config_->kernel_cache = true;
-  ef(*arg_ == "auto_cache")
+  ef(arg_ == "auto_cache")
     config_->auto_cache = true;
   else
     return 1;
@@ -227,63 +227,63 @@ parse_and_process_arg(Config            *config_,
 
 static
 int
-parse_and_process_kv_arg(Config            *config_,
-                         const std::string *key_,
-                         const std::string *value_)
+parse_and_process_kv_arg(Config       *config_,
+                         const string &key_,
+                         const string &value_)
 {
   int rv;
-  std::vector<std::string> keypart;
+  vector<string> keypart;
 
   rv = -1;
-  str::split(keypart,*key_,'.');
+  str::split(keypart,key_,'.');
   if(keypart.size() == 2)
     {
       if(keypart[0] == "func")
-        rv = config_->set_func_policy(keypart[1],*value_);
+        rv = config_->set_func_policy(keypart[1],value_);
       ef(keypart[0] == "category")
-        rv = config_->set_category_policy(keypart[1],*value_);
+        rv = config_->set_category_policy(keypart[1],value_);
     }
   else
     {
-      if(*key_ == "minfreespace")
+      if(key_ == "minfreespace")
         rv = parse_and_process(value_,&config_->minfreespace);
-      ef(*key_ == "moveonenospc")
+      ef(key_ == "moveonenospc")
         rv = parse_and_process(value_,&config_->moveonenospc);
-      ef(*key_ == "dropcacheonclose")
+      ef(key_ == "dropcacheonclose")
         rv = parse_and_process(value_,&config_->dropcacheonclose);
-      ef(*key_ == "symlinkify")
+      ef(key_ == "symlinkify")
         rv = parse_and_process(value_,&config_->symlinkify);
-      ef(*key_ == "symlinkify_timeout")
+      ef(key_ == "symlinkify_timeout")
         rv = parse_and_process(value_,&config_->symlinkify_timeout);
-      ef(*key_ == "nullrw")
+      ef(key_ == "nullrw")
         rv = parse_and_process(value_,&config_->nullrw);
-      ef(*key_ == "ignorepponrename")
+      ef(key_ == "ignorepponrename")
         rv = parse_and_process(value_,&config_->ignorepponrename);
-      ef(*key_ == "security_capability")
+      ef(key_ == "security_capability")
         rv = parse_and_process(value_,&config_->security_capability);
-      ef(*key_ == "link_cow")
+      ef(key_ == "link_cow")
         rv = parse_and_process(value_,&config_->link_cow);
-      ef(*key_ == "xattr")
+      ef(key_ == "xattr")
         rv = parse_and_process_errno(value_,&config_->xattr);
-      ef(*key_ == "statfs")
+      ef(key_ == "statfs")
         rv = parse_and_process_statfs(value_,&config_->statfs);
-      ef(*key_ == "statfs_ignore")
+      ef(key_ == "statfs_ignore")
         rv = parse_and_process_statfsignore(value_,&config_->statfs_ignore);
-      ef(*key_ == "hard_remove")
+      ef(key_ == "hard_remove")
         rv = parse_and_process(value_,&config_->hard_remove);
-      ef(*key_ == "direct_io")
+      ef(key_ == "direct_io")
         rv = parse_and_process(value_,&config_->direct_io);
-      ef(*key_ == "kernel_cache")
+      ef(key_ == "kernel_cache")
         rv = parse_and_process(value_,&config_->kernel_cache);
-      ef(*key_ == "auto_cache")
+      ef(key_ == "auto_cache")
         rv = parse_and_process(value_,&config_->auto_cache);
-      ef(*key_ == "entry_timeout")
+      ef(key_ == "entry_timeout")
         rv = parse_and_process(value_,&config_->entry_timeout);
-      ef(*key_ == "negative_timeout")
+      ef(key_ == "negative_timeout")
         rv = parse_and_process(value_,&config_->negative_timeout);
-      ef(*key_ == "attr_timeout")
+      ef(key_ == "attr_timeout")
         rv = parse_and_process(value_,&config_->attr_timeout);
-      ef(*key_ == "ac_attr_timeout")
+      ef(key_ == "ac_attr_timeout")
         rv = parse_and_process(value_,&config_->ac_attr_timeout);
     }
 
@@ -299,17 +299,17 @@ process_opt(Config     *config_,
             const char *arg_)
 {
   int rv;
-  std::vector<std::string> argvalue;
+  vector<string> argvalue;
 
   str::split(argvalue,arg_,'=');
   switch(argvalue.size())
     {
     case 1:
-      rv = parse_and_process_arg(config_,&argvalue[0]);
+      rv = parse_and_process_arg(config_,argvalue[0]);
       break;
 
     case 2:
-      rv = parse_and_process_kv_arg(config_,&argvalue[0],&argvalue[1]);
+      rv = parse_and_process_kv_arg(config_,argvalue[0],argvalue[1]);
       break;
 
     default:
@@ -332,7 +332,7 @@ process_branches(Config     *config_,
 
 static
 int
-process_destmounts(Config *config_,
+process_destmounts(Config     *config_,
                    const char *arg_)
 {
   config_->destmount = arg_;
@@ -462,7 +462,7 @@ namespace mergerfs
           FUSE_OPT_KEY("-v",MERGERFS_OPT_VERSION),
           FUSE_OPT_KEY("-V",MERGERFS_OPT_VERSION),
           FUSE_OPT_KEY("--version",MERGERFS_OPT_VERSION),
-          {NULL,-1U,0}
+          FUSE_OPT_END
         };
 
 
@@ -471,7 +471,7 @@ namespace mergerfs
                      opts,
                      ::option_processor);
 
-      set_fsname(&args,&config.branches);
+      set_fsname(&args,config.branches);
       set_subtype(&args);
     }
   }
