@@ -15,6 +15,7 @@
 */
 
 #include <fcntl.h>
+#include <sys/types.h>
 
 #if _XOPEN_SOURCE >= 600 || _POSIX_C_SOURCE >= 200112L
 # include "fs_base_fadvise_posix.icpp"

@@ -14,15 +14,15 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#include <fcntl.h>
-#include <linux/fs.h>
-
-#include <string>
-
 #include "errno.hpp"
 #include "fs_base_close.hpp"
 #include "fs_base_open.hpp"
 #include "fs_base_ioctl.hpp"
+
+#include <string>
+
+#include <fcntl.h>
+#include <linux/fs.h>
 
 using std::string;
 

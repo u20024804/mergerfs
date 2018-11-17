@@ -28,26 +28,29 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-static
-loff_t
-copy_file_range_(int           fd_in_,
-                 loff_t       *off_in_,
-                 int           fd_out_,
-                 loff_t       *off_out_,
-                 size_t        len_,
-                 unsigned int  flags_)
+namespace local
 {
+  static
+  loff_t
+  copy_file_range(int           fd_in_,
+                  loff_t       *off_in_,
+                  int           fd_out_,
+                  loff_t       *off_out_,
+                  size_t        len_,
+                  unsigned int  flags_)
+  {
 #ifdef SYS_copy_file_range
-  return ::syscall(SYS_copy_file_range,
-                   fd_in_,
-                   off_in_,
-                   fd_out_,
-                   off_out_,
-                   len_,
-                   flags_);
+    return ::syscall(SYS_copy_file_range,
+                     fd_in_,
+                     off_in_,
+                     fd_out_,
+                     off_out_,
+                     len_,
+                     flags_);
 #else
-  return (errno=EOPNOTSUPP,-1);
+    return (errno=EOPNOTSUPP,-1);
 #endif
+  }
 }
 
 namespace fs
@@ -60,12 +63,12 @@ namespace fs
                   const size_t        len_,
                   const unsigned int  flags_)
   {
-    return ::copy_file_range_(fd_in_,
-                              off_in_,
-                              fd_out_,
-                              off_out_,
-                              len_,
-                              flags_);
+    return local::copy_file_range(fd_in_,
+                                  off_in_,
+                                  fd_out_,
+                                  off_out_,
+                                  len_,
+                                  flags_);
   }
 
   ssize_t

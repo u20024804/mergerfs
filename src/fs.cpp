@@ -14,14 +14,6 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#include <string>
-#include <vector>
-
-#include <fcntl.h>
-#include <limits.h>
-#include <stdint.h>
-#include <stdlib.h>
-
 #include "errno.hpp"
 #include "fs_attr.hpp"
 #include "fs_base_realpath.hpp"
@@ -32,6 +24,14 @@
 #include "fs_xattr.hpp"
 #include "statvfs_util.hpp"
 #include "str.hpp"
+
+#include <string>
+#include <vector>
+
+#include <fcntl.h>
+#include <limits.h>
+#include <stdint.h>
+#include <stdlib.h>
 
 using std::string;
 using std::vector;

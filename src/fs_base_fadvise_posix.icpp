@@ -14,9 +14,10 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#include <fcntl.h>
-
 #include "errno.hpp"
+
+#include <fcntl.h>
+#include <sys/types.h>
 
 namespace fs
 {

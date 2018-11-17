@@ -26,8 +26,7 @@
 
 using std::string;
 using std::vector;
-using mergerfs::Policy;
-using mergerfs::Category;
+using namespace mergerfs;
 
 namespace local
 {

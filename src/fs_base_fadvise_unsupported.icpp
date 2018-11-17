@@ -16,6 +16,8 @@
 
 #include "errno.hpp"
 
+#include <sys/types.h>
+
 namespace fs
 {
   static
