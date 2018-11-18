@@ -160,7 +160,7 @@ gid_t_cache::initgroups(const uid_t uid,
   gid_t_rec *rec;
 
   rec = lower_bound(begin(),end(),uid);
-  if(rec == end() || rec->uid != uid)
+  if((rec == end()) || (rec->uid != uid))
     {
       rec = cache(uid,gid);
       rv = ::setgroups(rec);

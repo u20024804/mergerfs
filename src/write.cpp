@@ -27,54 +27,57 @@
 #include <string>
 #include <vector>
 
-using namespace mergerfs;
 using std::string;
 using std::vector;
+using namespace mergerfs;
 
 typedef int (*WriteFunc)(const int,const void*,const size_t,const off_t);
 
+namespace local
+{
 static
 bool
-_out_of_space(const int error)
+out_of_space(const int error_)
 {
-  return ((error == ENOSPC) ||
-          (error == EDQUOT));
+  return ((error_ == ENOSPC) ||
+          (error_ == EDQUOT));
 }
 
 static
 inline
 int
-_write(const int     fd,
-       const void   *buf,
-       const size_t  count,
-       const off_t   offset)
+write(const int     fd_,
+      const void   *buf_,
+       const size_t  count_,
+       const off_t   offset_)
 {
   int rv;
 
-  rv = fs::pwrite(fd,buf,count,offset);
+  rv = fs::pwrite(fd_,buf_,count_,offset_);
   if(rv == -1)
     return -errno;
   if(rv == 0)
     return 0;
 
-  return count;
+  return count_;
 }
 
 static
 inline
 int
-_write_direct_io(const int     fd,
-                 const void   *buf,
-                 const size_t  count,
-                 const off_t   offset)
+write_direct_io(const int     fd_,
+                 const void   *buf_,
+                 const size_t  count_,
+                 const off_t   offset_)
 {
   int rv;
 
-  rv = fs::pwrite(fd,buf,count,offset);
+  rv = fs::pwrite(fd_,buf_,count_,offset_);
   if(rv == -1)
     return -errno;
 
   return rv;
+}
 }
 
 namespace mergerfs
@@ -84,17 +87,19 @@ namespace mergerfs
     static
     inline
     int
-    write(WriteFunc       func,
-          const char     *buf,
-          const size_t    count,
-          const off_t     offset,
-          fuse_file_info *ffi)
+    write(WriteFunc       func_,
+          const char     *buf_,
+          const size_t    count_,
+          const off_t     offset_,
+          fuse_file_info *ffi_)
     {
       int rv;
-      FileInfo* fi = reinterpret_cast<FileInfo*>(ffi->fh);
+      FileInfo* fi;
 
-      rv = func(fi->fd,buf,count,offset);
-      if(_out_of_space(-rv))
+      fi = reinterpret_cast<FileInfo*>(ffi_->fh);
+
+      rv = func_(fi->fd,buf_,count_,offset_);
+      if(local::out_of_space(-rv))
         {
           const fuse_context *fc     = fuse_get_context();
           const Config       &config = Config::get(fc);
@@ -107,11 +112,11 @@ namespace mergerfs
 
               config.branches.to_paths(paths);
 
-              rv = fs::movefile(paths,fi->fusepath,count,fi->fd);
+              rv = fs::movefile(paths,fi->fusepath,count_,fi->fd);
               if(rv == -1)
                 return -ENOSPC;
 
-              rv = func(fi->fd,buf,count,offset);
+              rv = func_(fi->fd,buf_,count_,offset_);
             }
         }
 
@@ -119,33 +124,33 @@ namespace mergerfs
     }
 
     int
-    write(const char     *fusepath,
-          const char     *buf,
-          size_t          count,
-          off_t           offset,
-          fuse_file_info *ffi)
+    write(const char     *fusepath_,
+          const char     *buf_,
+          size_t          count_,
+          off_t           offset_,
+          fuse_file_info *ffi_)
     {
-      return write(_write,buf,count,offset,ffi);
+      return fuse::write(local::write,buf_,count_,offset_,ffi_);
     }
 
     int
-    write_direct_io(const char     *fusepath,
-                    const char     *buf,
-                    size_t          count,
-                    off_t           offset,
-                    fuse_file_info *ffi)
+    write_direct_io(const char     *fusepath_,
+                    const char     *buf_,
+                    size_t          count_,
+                    off_t           offset_,
+                    fuse_file_info *ffi_)
     {
-      return write(_write_direct_io,buf,count,offset,ffi);
+      return fuse::write(local::write_direct_io,buf_,count_,offset_,ffi_);
     }
 
     int
-    write_null(const char     *fusepath,
-               const char     *buf,
-               size_t          count,
-               off_t           offset,
-               fuse_file_info *ffi)
+    write_null(const char     *fusepath_,
+               const char     *buf_,
+               size_t          count_,
+               off_t           offset_,
+               fuse_file_info *ffi_)
     {
-      return count;
+      return count_;
     }
   }
 }
