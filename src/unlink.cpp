@@ -31,37 +31,37 @@
 
 using std::string;
 using std::vector;
-using mergerfs::Policy;
+using namespace mergerfs;
 
 namespace local
 {
   static
   int
-  unlink_loop_core(const string *basepath,
-                   const char   *fusepath,
-                   const int     error)
+  unlink_loop_core(const string *basepath_,
+                   const char   *fusepath_,
+                   const int     error_)
   {
     int rv;
     string fullpath;
 
-    fs::path::make(basepath,fusepath,fullpath);
+    fullpath = fs::path::make(basepath_,fusepath_);
 
     rv = fs::unlink(fullpath);
 
-    return error::calc(rv,error,errno);
+    return error::calc(rv,error_,errno);
   }
 
   static
   int
-  unlink_loop(const vector<const string*> &basepaths,
-              const char                  *fusepath)
+  unlink_loop(const vector<const string*> &basepaths_,
+              const char                  *fusepath_)
   {
     int error;
 
     error = -1;
-    for(size_t i = 0, ei = basepaths.size(); i != ei; i++)
+    for(size_t i = 0, ei = basepaths_.size(); i != ei; i++)
       {
-        error = local::unlink_loop_core(basepaths[i],fusepath,error);
+        error = local::unlink_loop_core(basepaths_[i],fusepath_,error);
       }
 
     return -error;
@@ -69,19 +69,19 @@ namespace local
 
   static
   int
-  unlink(Policy::Func::Action  actionFunc,
+  unlink(Policy::Func::Action  actionFunc_,
          const Branches       &branches_,
-         const uint64_t        minfreespace,
-         const char           *fusepath)
+         const uint64_t        minfreespace_,
+         const char           *fusepath_)
   {
     int rv;
     vector<const string*> basepaths;
 
-    rv = actionFunc(branches_,fusepath,minfreespace,basepaths);
+    rv = actionFunc_(branches_,fusepath_,minfreespace_,basepaths);
     if(rv == -1)
       return -errno;
 
-    return local::unlink_loop(basepaths,fusepath);
+    return local::unlink_loop(basepaths,fusepath_);
   }
 }
 
@@ -90,7 +90,7 @@ namespace mergerfs
   namespace fuse
   {
     int
-    unlink(const char *fusepath)
+    unlink(const char *fusepath_)
     {
       const fuse_context      *fc     = fuse_get_context();
       const Config            &config = Config::get(fc);
@@ -100,7 +100,7 @@ namespace mergerfs
       return local::unlink(config.unlink,
                            config.branches,
                            config.minfreespace,
-                           fusepath);
+                           fusepath_);
     }
   }
 }
