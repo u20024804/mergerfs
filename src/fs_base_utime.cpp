@@ -39,10 +39,10 @@ namespace fs
   }
 
   int
-  lutimens(const std::string     &path,
-           const struct timespec  times[2])
+  lutimens(const std::string     &path_,
+           const struct timespec  times_[2])
   {
-    return fs::utimensat(AT_FDCWD,path,times,AT_SYMLINK_NOFOLLOW);
+    return fs::utimensat(AT_FDCWD,path_,times_,AT_SYMLINK_NOFOLLOW);
   }
 
   int
