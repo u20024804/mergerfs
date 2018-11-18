@@ -33,19 +33,20 @@ namespace mergerfs
 
       ugid::init();
 
+      conn->want |= FUSE_CAP_ASYNC_DIO;
       conn->want |= FUSE_CAP_ASYNC_READ;
       conn->want |= FUSE_CAP_ATOMIC_O_TRUNC;
+      conn->want |= FUSE_CAP_AUTO_INVAL_DATA;
       conn->want |= FUSE_CAP_DONT_MASK;
       conn->want |= FUSE_CAP_IOCTL_DIR;
-      conn->want |= FUSE_CAP_SPLICE_WRITE;
-      conn->want |= FUSE_CAP_SPLICE_MOVE;
-      conn->want |= FUSE_CAP_SPLICE_READ;
-      conn->want |= FUSE_CAP_AUTO_INVAL_DATA;
+      conn->want |= FUSE_CAP_PARALLEL_DIROPS;
       conn->want |= FUSE_CAP_READDIRPLUS;
       conn->want |= FUSE_CAP_READDIRPLUS_AUTO;
-      conn->want |= FUSE_CAP_ASYNC_DIO;
-      conn->want |= FUSE_CAP_WRITEBACK_CACHE;
-      conn->want |= FUSE_CAP_PARALLEL_DIROPS;
+      conn->want |= FUSE_CAP_SPLICE_MOVE;
+      conn->want |= FUSE_CAP_SPLICE_READ;
+      conn->want |= FUSE_CAP_SPLICE_WRITE;
+      if(cfg->writeback_cache == true)
+        conn->want |= FUSE_CAP_WRITEBACK_CACHE;
 
       conn->max_write     = (1024 * 1024);
       conn->max_read      = 0;

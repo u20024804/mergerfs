@@ -79,15 +79,16 @@ namespace mergerfs
     StatFSIgnore::Enum       statfs_ignore;
 
   public:
+    bool   auto_cache;
+    bool   direct_io;
+    bool   hard_remove;
+    bool   kernel_cache;
+    bool   writeback_cache;
+    double ac_attr_timeout;
+    double attr_timeout;
     double entry_timeout;
     double negative_timeout;
-    double attr_timeout;
     int    remember;
-    bool   hard_remove;
-    bool   direct_io;
-    bool   kernel_cache;
-    bool   auto_cache;
-    double ac_attr_timeout;
 
   public:
     const Policy  *policies[FuseFunc::Enum::END];

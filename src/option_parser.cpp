@@ -285,6 +285,8 @@ parse_and_process_kv_arg(Config       *config_,
         rv = parse_and_process(value_,&config_->attr_timeout);
       ef(key_ == "ac_attr_timeout")
         rv = parse_and_process(value_,&config_->ac_attr_timeout);
+      ef(key_ == "writeback_cache")
+        rv = parse_and_process(value_,&config_->writeback_cache);
     }
 
   if(rv == -1)
