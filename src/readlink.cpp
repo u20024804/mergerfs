@@ -35,83 +35,90 @@ namespace local
 {
   static
   int
-  readlink_core_standard(const string &fullpath,
-                         char         *buf,
-                         const size_t  size)
+  readlink_core_standard(const string &fullpath_,
+                         char         *buf_,
+                         const size_t  size_)
 
   {
     int rv;
 
-    rv = fs::readlink(fullpath,buf,size);
+    rv = fs::readlink(fullpath_,buf_,size_);
     if(rv == -1)
       return -errno;
 
-    buf[rv] = '\0';
+    buf_[rv] = '\0';
 
     return 0;
   }
 
   static
   int
-  readlink_core_symlinkify(const string &fullpath,
-                           char         *buf,
-                           const size_t  size,
-                           const time_t  symlinkify_timeout)
+  readlink_core_symlinkify(const string &fullpath_,
+                           char         *buf_,
+                           const size_t  size_,
+                           const time_t  symlinkify_timeout_)
   {
     int rv;
     struct stat st;
 
-    rv = fs::stat(fullpath,st);
+    rv = fs::stat(fullpath_,st);
     if(rv == -1)
       return -errno;
 
-    if(!symlinkify::can_be_symlink(st,symlinkify_timeout))
-      return local::readlink_core_standard(fullpath,buf,size);
+    if(!symlinkify::can_be_symlink(st,symlinkify_timeout_))
+      return local::readlink_core_standard(fullpath_,buf_,size_);
 
-    ::strncpy(buf,fullpath.c_str(),size);
+    ::strncpy(buf_,fullpath_.c_str(),size_);
 
     return 0;
   }
 
   static
   int
-  readlink_core(const string *basepath,
-                const char   *fusepath,
-                char         *buf,
-                const size_t  size,
-                const bool    symlinkify,
-                const time_t  symlinkify_timeout)
+  readlink_core(const string *basepath_,
+                const char   *fusepath_,
+                char         *buf_,
+                const size_t  size_,
+                const bool    symlinkify_,
+                const time_t  symlinkify_timeout_)
   {
     string fullpath;
 
-    fullpath = fs::path::make(basepath,fusepath);
+    fullpath = fs::path::make(basepath_,fusepath_);
 
-    if(symlinkify)
-      return local::readlink_core_symlinkify(fullpath,buf,size,symlinkify_timeout);
+    if(symlinkify_)
+      return local::readlink_core_symlinkify(fullpath,
+                                             buf_,
+                                             size_,
+                                             symlinkify_timeout_);
 
-    return local::readlink_core_standard(fullpath,buf,size);
+    return local::readlink_core_standard(fullpath,buf_,size_);
   }
 
   static
   int
-  readlink(Policy::Func::Search  searchFunc,
+  readlink(Policy::Func::Search  searchFunc_,
            const Branches       &branches_,
-           const uint64_t        minfreespace,
-           const char           *fusepath,
-           char                 *buf,
-           const size_t          size,
-           const bool            symlinkify,
-           const time_t          symlinkify_timeout)
+           const uint64_t        minfreespace_,
+           const char           *fusepath_,
+           char                 *buf_,
+           const size_t          size_,
+           const bool            symlinkify_,
+           const time_t          symlinkify_timeout_)
   {
     int rv;
     vector<const string*> basepaths;
 
-    rv = searchFunc(branches_,fusepath,minfreespace,basepaths);
+    rv = searchFunc_(branches_,fusepath_,minfreespace_,basepaths);
     if(rv == -1)
       return -errno;
 
-    return local::readlink_core(basepaths[0],fusepath,buf,size,
-                                symlinkify,symlinkify_timeout);
+    return local::readlink_core(basepaths[0],
+                                fusepath_,
+                                buf_,
+                                size_,
+                                symlinkify_,
+                                symlinkify_timeout_);
   }
 }
 
@@ -120,9 +127,9 @@ namespace mergerfs
   namespace fuse
   {
     int
-    readlink(const char *fusepath,
-             char       *buf,
-             size_t      size)
+    readlink(const char *fusepath_,
+             char       *buf_,
+             size_t      size_)
     {
       const fuse_context      *fc     = fuse_get_context();
       const Config            &config = Config::get(fc);
@@ -132,9 +139,9 @@ namespace mergerfs
       return local::readlink(config.readlink,
                              config.branches,
                              config.minfreespace,
-                             fusepath,
-                             buf,
-                             size,
+                             fusepath_,
+                             buf_,
+                             size_,
                              config.symlinkify,
                              config.symlinkify_timeout);
     }
