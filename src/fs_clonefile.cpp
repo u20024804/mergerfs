@@ -29,50 +29,53 @@
 #include "fs_sendfile.hpp"
 #include "fs_xattr.hpp"
 
-static
-int
-copydata(const int    src_fd_,
-         const int    dst_fd_,
-         const size_t count_)
+namespace local
 {
-  int rv;
+  static
+  int
+  copydata(const int    src_fd_,
+           const int    dst_fd_,
+           const size_t count_)
+  {
+    int rv;
 
-  fs::fadvise_willneed(src_fd_,0,count_);
-  fs::fadvise_sequential(src_fd_,0,count_);
+    fs::fadvise_willneed(src_fd_,0,count_);
+    fs::fadvise_sequential(src_fd_,0,count_);
 
-  fs::fallocate(dst_fd_,0,0,count_);
-  fs::ftruncate(dst_fd_,count_);
+    fs::fallocate(dst_fd_,0,0,count_);
+    fs::ftruncate(dst_fd_,count_);
 
-  rv = fs::ficlone(src_fd_,dst_fd_);
-  if((rv != -1) || ((rv == -1) && (errno != EOPNOTSUPP)))
-    return rv;
+    rv = fs::ficlone(src_fd_,dst_fd_);
+    if((rv != -1) || ((rv == -1) && (errno != EOPNOTSUPP)))
+      return rv;
 
-  rv = fs::copy_file_range(src_fd_,dst_fd_,count_);
-  if((rv != -1) || ((rv == -1) && (errno != EOPNOTSUPP)))
-    return rv;
+    rv = fs::copy_file_range(src_fd_,dst_fd_,count_);
+    if((rv != -1) || ((rv == -1) && (errno != EOPNOTSUPP)))
+      return rv;
 
-  rv = fs::sendfile(src_fd_,dst_fd_,count_);
-  if((rv != -1) || ((rv == -1) && (errno != EINVAL) && (errno != ENOSYS)))
-    return rv;
+    rv = fs::sendfile(src_fd_,dst_fd_,count_);
+    if((rv != -1) || ((rv == -1) && (errno != EINVAL) && (errno != ENOSYS)))
+      return rv;
 
-  return fs::copyfile(src_fd_,dst_fd_);
-}
+    return fs::copyfile(src_fd_,dst_fd_);
+  }
 
-static
-bool
-ignorable_error(const int err_)
-{
-  switch(err_)
-    {
-    case ENOTTY:
-    case ENOTSUP:
+  static
+  bool
+  ignorable_error(const int err_)
+  {
+    switch(err_)
+      {
+      case ENOTTY:
+      case ENOTSUP:
 #if ENOTSUP != EOPNOTSUPP
-    case EOPNOTSUPP:
+      case EOPNOTSUPP:
 #endif
-      return true;
-    }
+        return true;
+      }
 
-  return false;
+    return false;
+  }
 }
 
 namespace fs
@@ -88,16 +91,16 @@ namespace fs
     if(rv == -1)
       return -1;
 
-    rv = ::copydata(src_fd_,dst_fd_,src_st.st_size);
+    rv = local::copydata(src_fd_,dst_fd_,src_st.st_size);
     if(rv == -1)
       return -1;
 
     rv = fs::attr::copy(src_fd_,dst_fd_);
-    if((rv == -1) && !ignorable_error(errno))
+    if((rv == -1) && !local::ignorable_error(errno))
       return -1;
 
     rv = fs::xattr::copy(src_fd_,dst_fd_);
-    if((rv == -1) && !ignorable_error(errno))
+    if((rv == -1) && !local::ignorable_error(errno))
       return -1;
 
     rv = fs::fchown_check_on_error(dst_fd_,src_st);
