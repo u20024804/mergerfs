@@ -35,30 +35,33 @@ using std::string;
 using std::vector;
 using namespace mergerfs;
 
-static
-bool
-_out_of_space(const int error)
+namespace local
 {
-  return ((error == ENOSPC) ||
-          (error == EDQUOT));
-}
+  static
+  bool
+  out_of_space(const int error_)
+  {
+    return ((error_ == ENOSPC) ||
+            (error_ == EDQUOT));
+  }
 
-static
-int
-_write_buf(const int    fd,
-           fuse_bufvec &src,
-           const off_t  offset)
-{
-  size_t size = fuse_buf_size(&src);
-  fuse_bufvec dst  = FUSE_BUFVEC_INIT(size);
-  const fuse_buf_copy_flags cpflags =
-    (fuse_buf_copy_flags)(FUSE_BUF_SPLICE_MOVE|FUSE_BUF_SPLICE_NONBLOCK);
+  static
+  int
+  write_buf(const int    fd_,
+            fuse_bufvec &src_,
+            const off_t  offset_)
+  {
+    size_t      size = fuse_buf_size(&src_);
+    fuse_bufvec dst  = FUSE_BUFVEC_INIT(size);
+    const fuse_buf_copy_flags cpflags =
+      (fuse_buf_copy_flags)(FUSE_BUF_SPLICE_MOVE|FUSE_BUF_SPLICE_NONBLOCK);
 
-  dst.buf->flags = (fuse_buf_flags)(FUSE_BUF_IS_FD|FUSE_BUF_FD_SEEK);
-  dst.buf->fd    = fd;
-  dst.buf->pos   = offset;
+    dst.buf->flags = (fuse_buf_flags)(FUSE_BUF_IS_FD|FUSE_BUF_FD_SEEK);
+    dst.buf->fd    = fd_;
+    dst.buf->pos   = offset_;
 
-  return fuse_buf_copy(&dst,&src,cpflags);
+    return fuse_buf_copy(&dst,&src_,cpflags);
+  }
 }
 
 namespace mergerfs
@@ -66,16 +69,18 @@ namespace mergerfs
   namespace fuse
   {
     int
-    write_buf(const char     *fusepath,
-              fuse_bufvec    *src,
-              off_t           offset,
-              fuse_file_info *ffi)
+    write_buf(const char     *fusepath_,
+              fuse_bufvec    *src_,
+              off_t           offset_,
+              fuse_file_info *ffi_)
     {
       int rv;
-      FileInfo *fi = reinterpret_cast<FileInfo*>(ffi->fh);
+      FileInfo *fi;
 
-      rv = _write_buf(fi->fd,*src,offset);
-      if(_out_of_space(-rv))
+      fi = reinterpret_cast<FileInfo*>(ffi_->fh);
+
+      rv = local::write_buf(fi->fd,*src_,offset_);
+      if(local::out_of_space(-rv))
         {
           const fuse_context *fc     = fuse_get_context();
           const Config       &config = Config::get(fc);
@@ -89,12 +94,12 @@ namespace mergerfs
 
               config.branches.to_paths(paths);
 
-              extra = fuse_buf_size(src);
+              extra = fuse_buf_size(src_);
               rv = fs::movefile(paths,fi->fusepath,extra,fi->fd);
               if(rv == -1)
                 return -ENOSPC;
 
-              rv = _write_buf(fi->fd,*src,offset);
+              rv = local::write_buf(fi->fd,*src_,offset_);
             }
         }
 
