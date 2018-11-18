@@ -14,11 +14,6 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#include <fuse.h>
-
-#include <string>
-#include <vector>
-
 #include "config.hpp"
 #include "errno.hpp"
 #include "fs_acl.hpp"
@@ -29,100 +24,115 @@
 #include "rwlock.hpp"
 #include "ugid.hpp"
 
+#include <fuse.h>
+
+#include <string>
+#include <vector>
+
 using std::string;
 using std::vector;
 using namespace mergerfs;
 
-static
-inline
-int
-_mknod_core(const string &fullpath,
-            mode_t        mode,
-            const mode_t  umask,
-            const dev_t   dev)
+namespace local
 {
-  if(!fs::acl::dir_has_defaults(fullpath))
-    mode &= ~umask;
+  static
+  inline
+  int
+  mknod_core(const string &fullpath_,
+             mode_t        mode_,
+             const mode_t  umask_,
+             const dev_t   dev_)
+  {
+    if(!fs::acl::dir_has_defaults(fullpath_))
+      mode_ &= ~umask_;
 
-  return fs::mknod(fullpath,mode,dev);
-}
+    return fs::mknod(fullpath_,mode_,dev_);
+  }
 
-static
-int
-_mknod_loop_core(const string &createpath,
-                 const char   *fusepath,
-                 const mode_t  mode,
-                 const mode_t  umask,
-                 const dev_t   dev,
-                 const int     error)
-{
-  int rv;
-  string fullpath;
+  static
+  int
+  mknod_loop_core(const string &createpath_,
+                  const char   *fusepath_,
+                  const mode_t  mode_,
+                  const mode_t  umask_,
+                  const dev_t   dev_,
+                  const int     error_)
+  {
+    int rv;
+    string fullpath;
 
-  fs::path::make(&createpath,fusepath,fullpath);
+    fullpath = fs::path::make(&createpath_,fusepath_);
 
-  rv = _mknod_core(fullpath,mode,umask,dev);
+    rv = local::mknod_core(fullpath,mode_,umask_,dev_);
 
-  return error::calc(rv,error,errno);
-}
+    return error::calc(rv,error_,errno);
+  }
 
-static
-int
-_mknod_loop(const string                &existingpath,
-            const vector<const string*> &createpaths,
-            const char                  *fusepath,
-            const string                &fusedirpath,
-            const mode_t                 mode,
-            const mode_t                 umask,
-            const dev_t                  dev)
-{
-  int rv;
-  int error;
+  static
+  int
+  mknod_loop(const string                &existingpath_,
+             const vector<const string*> &createpaths_,
+             const char                  *fusepath_,
+             const string                &fusedirpath_,
+             const mode_t                 mode_,
+             const mode_t                 umask_,
+             const dev_t                  dev_)
+  {
+    int rv;
+    int error;
 
-  error = -1;
-  for(size_t i = 0, ei = createpaths.size(); i != ei; i++)
-    {
-      rv = fs::clonepath_as_root(existingpath,*createpaths[i],fusedirpath);
-      if(rv == -1)
-        error = error::calc(rv,error,errno);
-      else
-        error = _mknod_loop_core(*createpaths[i],
-                                 fusepath,
-                                 mode,umask,dev,error);
-    }
+    error = -1;
+    for(size_t i = 0, ei = createpaths_.size(); i != ei; i++)
+      {
+        rv = fs::clonepath_as_root(existingpath_,*createpaths_[i],fusedirpath_);
+        if(rv == -1)
+          error = error::calc(rv,error,errno);
+        else
+          error = local::mknod_loop_core(*createpaths_[i],
+                                         fusepath_,
+                                         mode_,
+                                         umask_,
+                                         dev_,
+                                         error);
+      }
 
-  return -error;
-}
+    return -error;
+  }
 
-static
-int
-_mknod(Policy::Func::Search  searchFunc,
-       Policy::Func::Create  createFunc,
-       const Branches       &branches_,
-       const uint64_t        minfreespace,
-       const char           *fusepath,
-       const mode_t          mode,
-       const mode_t          umask,
-       const dev_t           dev)
-{
-  int rv;
-  string fusedirpath;
-  vector<const string*> createpaths;
-  vector<const string*> existingpaths;
+  static
+  int
+  mknod(Policy::Func::Search  searchFunc_,
+        Policy::Func::Create  createFunc_,
+        const Branches       &branches_,
+        const uint64_t        minfreespace_,
+        const char           *fusepath_,
+        const mode_t          mode_,
+        const mode_t          umask_,
+        const dev_t           dev_)
+  {
+    int rv;
+    string fusedirpath;
+    vector<const string*> createpaths;
+    vector<const string*> existingpaths;
 
-  fusedirpath = fs::path::dirname(fusepath);
+    fusedirpath = fs::path::dirname(fusepath_);
 
-  rv = searchFunc(branches_,fusedirpath,minfreespace,existingpaths);
-  if(rv == -1)
-    return -errno;
+    rv = searchFunc_(branches_,fusedirpath,minfreespace_,existingpaths);
+    if(rv == -1)
+      return -errno;
 
-  rv = createFunc(branches_,fusedirpath,minfreespace,createpaths);
-  if(rv == -1)
-    return -errno;
+    rv = createFunc_(branches_,fusedirpath,minfreespace_,createpaths);
+    if(rv == -1)
+      return -errno;
 
-  return _mknod_loop(*existingpaths[0],createpaths,
-                     fusepath,fusedirpath,
-                     mode,umask,dev);
+    return local::mknod_loop(*existingpaths[0],
+                             createpaths,
+                             fusepath_,
+                             fusedirpath,
+                             mode_,
+                             umask_,
+                             dev_);
+  }
 }
 
 namespace mergerfs
@@ -130,23 +140,23 @@ namespace mergerfs
   namespace fuse
   {
     int
-    mknod(const char *fusepath,
-          mode_t      mode,
-          dev_t       rdev)
+    mknod(const char *fusepath_,
+          mode_t      mode_,
+          dev_t       rdev_)
     {
       const fuse_context      *fc     = fuse_get_context();
       const Config            &config = Config::get(fc);
       const ugid::Set          ugid(fc->uid,fc->gid);
       const rwlock::ReadGuard  readlock(&config.branches_lock);
 
-      return _mknod(config.getattr,
-                    config.mknod,
-                    config.branches,
-                    config.minfreespace,
-                    fusepath,
-                    mode,
-                    fc->umask,
-                    rdev);
+      return local::mknod(config.getattr,
+                          config.mknod,
+                          config.branches,
+                          config.minfreespace,
+                          fusepath_,
+                          mode_,
+                          fc->umask,
+                          rdev_);
     }
   }
 }
