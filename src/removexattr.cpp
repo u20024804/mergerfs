@@ -14,11 +14,6 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#include <fuse.h>
-
-#include <string>
-#include <vector>
-
 #include "config.hpp"
 #include "errno.hpp"
 #include "fs_base_removexattr.hpp"
@@ -27,61 +22,72 @@
 #include "rwlock.hpp"
 #include "ugid.hpp"
 
+#include <fuse.h>
+
+#include <string>
+#include <vector>
+
 using std::string;
 using std::vector;
-using mergerfs::Policy;
+using namespace mergerfs;
 
-static
-int
-_removexattr_loop_core(const string *basepath,
-                       const char   *fusepath,
-                       const char   *attrname,
-                       const int     error)
+namespace local
 {
-  int rv;
-  string fullpath;
+  static
+  int
+  removexattr_loop_core(const string *basepath_,
+                        const char   *fusepath_,
+                        const char   *attrname_,
+                        const int     error_)
+  {
+    int rv;
+    string fullpath;
 
-  fs::path::make(basepath,fusepath,fullpath);
+    fullpath = fs::path::make(basepath_,fusepath_);
 
-  rv = fs::lremovexattr(fullpath,attrname);
+    rv = fs::lremovexattr(fullpath,attrname_);
 
-  return error::calc(rv,error,errno);
-}
+    return error::calc(rv,error_,errno);
+  }
 
-static
-int
-_removexattr_loop(const vector<const string*> &basepaths,
-                  const char                  *fusepath,
-                  const char                  *attrname)
-{
-  int error;
+  static
+  int
+  removexattr_loop(const vector<const string*> &basepaths_,
+                   const char                  *fusepath_,
+                   const char                  *attrname_)
+  {
+    int error;
 
-  error = -1;
+    error = -1;
 
-  for(size_t i = 0, ei = basepaths.size(); i != ei; i++)
-    {
-      error = _removexattr_loop_core(basepaths[i],fusepath,attrname,error);
-    }
+    for(size_t i = 0, ei = basepaths_.size(); i != ei; i++)
+      {
+        error = local::removexattr_loop_core(basepaths_[i],
+                                             fusepath_,
+                                             attrname_,
+                                             error);
+      }
 
-  return -error;
-}
+    return -error;
+  }
 
-static
-int
-_removexattr(Policy::Func::Action  actionFunc,
-             const Branches       &branches_,
-             const uint64_t        minfreespace,
-             const char           *fusepath,
-             const char           *attrname)
-{
-  int rv;
-  vector<const string*> basepaths;
+  static
+  int
+  removexattr(Policy::Func::Action  actionFunc_,
+              const Branches       &branches_,
+              const uint64_t        minfreespace_,
+              const char           *fusepath_,
+              const char           *attrname_)
+  {
+    int rv;
+    vector<const string*> basepaths;
 
-  rv = actionFunc(branches_,fusepath,minfreespace,basepaths);
-  if(rv == -1)
-    return -errno;
+    rv = actionFunc_(branches_,fusepath_,minfreespace_,basepaths);
+    if(rv == -1)
+      return -errno;
 
-  return _removexattr_loop(basepaths,fusepath,attrname);
+    return local::removexattr_loop(basepaths,fusepath_,attrname_);
+  }
 }
 
 namespace mergerfs
@@ -89,13 +95,13 @@ namespace mergerfs
   namespace fuse
   {
     int
-    removexattr(const char *fusepath,
-                const char *attrname)
+    removexattr(const char *fusepath_,
+                const char *attrname_)
     {
       const fuse_context *fc     = fuse_get_context();
       const Config       &config = Config::get(fc);
 
-      if(fusepath == config.controlfile)
+      if(fusepath_ == config.controlfile)
         return -ENOATTR;
       if(config.xattr)
         return -config.xattr;
@@ -103,11 +109,11 @@ namespace mergerfs
       const ugid::Set         ugid(fc->uid,fc->gid);
       const rwlock::ReadGuard readlock(&config.branches_lock);
 
-      return _removexattr(config.removexattr,
-                          config.branches,
-                          config.minfreespace,
-                          fusepath,
-                          attrname);
+      return local::removexattr(config.removexattr,
+                                config.branches,
+                                config.minfreespace,
+                                fusepath_,
+                                attrname_);
     }
   }
 }

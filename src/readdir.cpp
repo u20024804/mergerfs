@@ -16,11 +16,6 @@
 
 #define _DEFAULT_SOURCE
 
-#include <fuse.h>
-
-#include <string>
-#include <vector>
-
 #include "config.hpp"
 #include "dirinfo.hpp"
 #include "errno.hpp"
@@ -38,6 +33,11 @@
 #include "rwlock.hpp"
 #include "ugid.hpp"
 
+#include <fuse.h>
+
+#include <string>
+#include <vector>
+
 using std::string;
 using std::vector;
 
@@ -48,9 +48,9 @@ namespace local
   static
   int
   readdir(const Branches        &branches_,
-          const char            *dirname,
-          void                  *buf,
-          const fuse_fill_dir_t  filler)
+          const char            *dirname_,
+          void                  *buf_,
+          const fuse_fill_dir_t  filler_)
   {
     HashSet names;
     string basepath;
@@ -65,7 +65,7 @@ namespace local
         DIR *dh;
         struct dirent *de;
 
-        basepath = fs::path::make(&branches_[i].path,dirname);
+        basepath = fs::path::make(&branches_[i].path,dirname_);
 
         dh = fs::opendir(basepath);
         if(!dh)
@@ -90,7 +90,7 @@ namespace local
 
             fs::inode::recompute(st);
 
-            rv = filler(buf,de->d_name,&st,NO_OFFSET,fill_flags);
+            rv = filler_(buf_,de->d_name,&st,NO_OFFSET,fill_flags);
             if(rv)
               return (fs::closedir(dh),-ENOMEM);
           }
@@ -104,8 +104,8 @@ namespace local
   static
   int
   readdir_plus(const Branches        &branches_,
-               const char            *dirname,
-               void                  *buf,
+               const char            *dirname_,
+               void                  *buf_,
                const fuse_fill_dir_t  filler)
   {
     HashSet names;
@@ -122,7 +122,7 @@ namespace local
         dev_t dev;
         struct dirent *de;
 
-        basepath = fs::path::make(&branches_[i].path,dirname);
+        basepath = fs::path::make(&branches_[i].path,dirname_);
 
         dh = fs::opendir(basepath);
         if(!dh)
@@ -152,7 +152,7 @@ namespace local
 
             fs::inode::recompute(st);
 
-            rv = filler(buf,de->d_name,&st,NO_OFFSET,fill_flags);
+            rv = filler(buf_,de->d_name,&st,NO_OFFSET,fill_flags);
             if(rv)
               return (fs::closedir(dh),-ENOMEM);
           }

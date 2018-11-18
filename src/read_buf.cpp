@@ -14,38 +14,43 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
+#include "errno.hpp"
+#include "fileinfo.hpp"
+
 #include <fuse.h>
 
 #include <stdlib.h>
 #include <string.h>
 
-#include "errno.hpp"
-#include "fileinfo.hpp"
-
 typedef struct fuse_bufvec fuse_bufvec;
 
-static
-int
-_read_buf(const int      fd,
-          fuse_bufvec  **bufp,
-          const size_t   size,
-          const off_t    offset)
+namespace local
 {
-  fuse_bufvec *src;
+  static
+  int
+  read_buf(const int      fd_,
+           fuse_bufvec  **bufp_,
+           const size_t   size_,
+           const off_t    offset_)
+  {
+    fuse_bufvec *src;
 
-  src = (fuse_bufvec*)malloc(sizeof(fuse_bufvec));
-  if(src == NULL)
-    return -ENOMEM;
+    src = (fuse_bufvec*)malloc(sizeof(fuse_bufvec));
+    if(src == NULL)
+      return -ENOMEM;
 
-  *src = FUSE_BUFVEC_INIT(size);
+    *src = FUSE_BUFVEC_INIT(size_);
 
-  src->buf->flags = (fuse_buf_flags)(FUSE_BUF_IS_FD|FUSE_BUF_FD_SEEK|FUSE_BUF_FD_RETRY);
-  src->buf->fd    = fd;
-  src->buf->pos   = offset;
+    src->buf->flags = (fuse_buf_flags)(FUSE_BUF_IS_FD   |
+                                       FUSE_BUF_FD_SEEK |
+                                       FUSE_BUF_FD_RETRY);
+    src->buf->fd    = fd_;
+    src->buf->pos   = offset_;
 
-  *bufp = src;
+    *bufp_ = src;
 
-  return 0;
+    return 0;
+  }
 }
 
 namespace mergerfs
@@ -53,18 +58,20 @@ namespace mergerfs
   namespace fuse
   {
     int
-    read_buf(const char      *fusepath,
-             fuse_bufvec    **bufp,
-             size_t           size,
-             off_t            offset,
-             fuse_file_info  *ffi)
+    read_buf(const char      *fusepath_,
+             fuse_bufvec    **bufp_,
+             size_t           size_,
+             off_t            offset_,
+             fuse_file_info  *ffi_)
     {
-      FileInfo *fi = reinterpret_cast<FileInfo*>(ffi->fh);
+      FileInfo *fi;
 
-      return _read_buf(fi->fd,
-                       bufp,
-                       size,
-                       offset);
+      fi = reinterpret_cast<FileInfo*>(ffi_->fh);
+
+      return local::read_buf(fi->fd,
+                             bufp_,
+                             size_,
+                             offset_);
     }
   }
 }
