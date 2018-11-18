@@ -29,33 +29,33 @@ namespace local
   static
   inline
   int
-  read(const int     fd,
-       void         *buf,
-       const size_t  count,
-       const off_t   offset)
+  read(const int     fd_,
+       void         *buf_,
+       const size_t  count_,
+       const off_t   offset_)
   {
     int rv;
 
-    rv = fs::pread(fd,buf,count,offset);
+    rv = fs::pread(fd_,buf_,count_,offset_);
     if(rv == -1)
       return -errno;
     if(rv == 0)
       return 0;
 
-    return count;
+    return count_;
   }
 
   static
   inline
   int
-  read_direct_io(const int     fd,
-                 void         *buf,
-                 const size_t  count,
-                 const off_t   offset)
+  read_direct_io(const int     fd_,
+                 void         *buf_,
+                 const size_t  count_,
+                 const off_t   offset_)
   {
     int rv;
 
-    rv = fs::pread(fd,buf,count,offset);
+    rv = fs::pread(fd_,buf_,count_,offset_);
     if(rv == -1)
       return -errno;
 
@@ -68,38 +68,38 @@ namespace mergerfs
   namespace fuse
   {
     int
-    read(const char     *fusepath,
-         char           *buf,
-         size_t          count,
-         off_t           offset,
-         fuse_file_info *ffi)
+    read(const char     *fusepath_,
+         char           *buf_,
+         size_t          count_,
+         off_t           offset_,
+         fuse_file_info *ffi_)
     {
-      FileInfo *fi = reinterpret_cast<FileInfo*>(ffi->fh);
+      FileInfo *fi = reinterpret_cast<FileInfo*>(ffi_->fh);
 
-      return local::read(fi->fd,buf,count,offset);
+      return local::read(fi->fd,buf_,count_,offset_);
     }
 
     int
-    read_direct_io(const char     *fusepath,
-                   char           *buf,
-                   size_t          count,
-                   off_t           offset,
-                   fuse_file_info *ffi)
+    read_direct_io(const char     *fusepath_,
+                   char           *buf_,
+                   size_t          count_,
+                   off_t           offset_,
+                   fuse_file_info *ffi_)
     {
-      FileInfo *fi = reinterpret_cast<FileInfo*>(ffi->fh);
+      FileInfo *fi = reinterpret_cast<FileInfo*>(ffi_->fh);
 
-      return local::read_direct_io(fi->fd,buf,count,offset);
+      return local::read_direct_io(fi->fd,buf_,count_,offset_);
     }
 
     int
-    read_null(const char     *fusepath,
-              char           *buf,
-              size_t          count,
-              off_t           offset,
-              fuse_file_info *ffi)
+    read_null(const char     *fusepath_,
+              char           *buf_,
+              size_t          count_,
+              off_t           offset_,
+              fuse_file_info *ffi_)
 
     {
-      return count;
+      return count_;
     }
   }
 }
