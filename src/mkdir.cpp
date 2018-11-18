@@ -14,11 +14,6 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#include <fuse.h>
-
-#include <string>
-#include <vector>
-
 #include "config.hpp"
 #include "errno.hpp"
 #include "fs_acl.hpp"
@@ -29,94 +24,102 @@
 #include "rwlock.hpp"
 #include "ugid.hpp"
 
+#include <fuse.h>
+
+#include <string>
+#include <vector>
+
 using std::string;
 using std::vector;
 using namespace mergerfs;
 
-static
-int
-_mkdir_core(const string &fullpath,
-            mode_t        mode,
-            const mode_t  umask)
+namespace local
 {
-  if(!fs::acl::dir_has_defaults(fullpath))
-    mode &= ~umask;
+  static
+  int
+  mkdir_core(const string &fullpath,
+             mode_t        mode,
+             const mode_t  umask)
+  {
+    if(!fs::acl::dir_has_defaults(fullpath))
+      mode &= ~umask;
 
-  return fs::mkdir(fullpath,mode);
-}
+    return fs::mkdir(fullpath,mode);
+  }
 
-static
-int
-_mkdir_loop_core(const string &createpath,
-                 const char   *fusepath,
-                 const mode_t  mode,
-                 const mode_t  umask,
-                 const int     error)
-{
-  int rv;
-  string fullpath;
+  static
+  int
+  mkdir_loop_core(const string &createpath,
+                  const char   *fusepath,
+                  const mode_t  mode,
+                  const mode_t  umask,
+                  const int     error)
+  {
+    int rv;
+    string fullpath;
 
-  fs::path::make(&createpath,fusepath,fullpath);
+    fs::path::make(&createpath,fusepath,fullpath);
 
-  rv = _mkdir_core(fullpath,mode,umask);
+    rv = local::mkdir_core(fullpath,mode,umask);
 
-  return error::calc(rv,error,errno);
-}
+    return error::calc(rv,error,errno);
+  }
 
-static
-int
-_mkdir_loop(const string                &existingpath,
-            const vector<const string*> &createpaths,
-            const char                  *fusepath,
-            const string                &fusedirpath,
-            const mode_t                 mode,
-            const mode_t                 umask)
-{
-  int rv;
-  int error;
+  static
+  int
+  mkdir_loop(const string                &existingpath,
+             const vector<const string*> &createpaths,
+             const char                  *fusepath,
+             const string                &fusedirpath,
+             const mode_t                 mode,
+             const mode_t                 umask)
+  {
+    int rv;
+    int error;
 
-  error = -1;
-  for(size_t i = 0, ei = createpaths.size(); i != ei; i++)
-    {
-      rv = fs::clonepath_as_root(existingpath,*createpaths[i],fusedirpath);
-      if(rv == -1)
-        error = error::calc(rv,error,errno);
-      else
-        error = _mkdir_loop_core(*createpaths[i],
-                                 fusepath,
-                                 mode,umask,error);
-    }
+    error = -1;
+    for(size_t i = 0, ei = createpaths.size(); i != ei; i++)
+      {
+        rv = fs::clonepath_as_root(existingpath,*createpaths[i],fusedirpath);
+        if(rv == -1)
+          error = error::calc(rv,error,errno);
+        else
+          error = local::mkdir_loop_core(*createpaths[i],
+                                         fusepath,
+                                         mode,umask,error);
+      }
 
-  return -error;
-}
+    return -error;
+  }
 
-static
-int
-_mkdir(Policy::Func::Search  searchFunc,
-       Policy::Func::Create  createFunc,
-       const Branches       &branches_,
-       const uint64_t        minfreespace,
-       const char           *fusepath,
-       const mode_t          mode,
-       const mode_t          umask)
-{
-  int rv;
-  string fusedirpath;
-  vector<const string*> createpaths;
-  vector<const string*> existingpaths;
+  static
+  int
+  mkdir(Policy::Func::Search  searchFunc,
+        Policy::Func::Create  createFunc,
+        const Branches       &branches_,
+        const uint64_t        minfreespace,
+        const char           *fusepath,
+        const mode_t          mode,
+        const mode_t          umask)
+  {
+    int rv;
+    string fusedirpath;
+    vector<const string*> createpaths;
+    vector<const string*> existingpaths;
 
-  fusedirpath = fs::path::dirname(fusepath);
+    fusedirpath = fs::path::dirname(fusepath);
 
-  rv = searchFunc(branches_,fusedirpath,minfreespace,existingpaths);
-  if(rv == -1)
-    return -errno;
+    rv = searchFunc(branches_,fusedirpath,minfreespace,existingpaths);
+    if(rv == -1)
+      return -errno;
 
-  rv = createFunc(branches_,fusedirpath,minfreespace,createpaths);
-  if(rv == -1)
-    return -errno;
+    rv = createFunc(branches_,fusedirpath,minfreespace,createpaths);
+    if(rv == -1)
+      return -errno;
 
-  return _mkdir_loop(*existingpaths[0],createpaths,
-                     fusepath,fusedirpath,mode,umask);
+    return local::mkdir_loop(*existingpaths[0],createpaths,
+                             fusepath,fusedirpath,mode,umask);
+  }
 }
 
 namespace mergerfs
@@ -132,13 +135,13 @@ namespace mergerfs
       const ugid::Set          ugid(fc->uid,fc->gid);
       const rwlock::ReadGuard  readlock(&config.branches_lock);
 
-      return _mkdir(config.getattr,
-                    config.mkdir,
-                    config.branches,
-                    config.minfreespace,
-                    fusepath,
-                    mode,
-                    fc->umask);
+      return local::mkdir(config.getattr,
+                          config.mkdir,
+                          config.branches,
+                          config.minfreespace,
+                          fusepath,
+                          mode,
+                          fc->umask);
     }
   }
 }
