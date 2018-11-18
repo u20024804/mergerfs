@@ -37,14 +37,14 @@ namespace local
 {
   static
   int
-  mkdir_core(const string &fullpath,
-             mode_t        mode,
-             const mode_t  umask)
+  mkdir_core(const string &fullpath_,
+             mode_t        mode_,
+             const mode_t  umask_)
   {
-    if(!fs::acl::dir_has_defaults(fullpath))
-      mode &= ~umask;
+    if(!fs::acl::dir_has_defaults(fullpath_))
+      mode_ &= ~umask_;
 
-    return fs::mkdir(fullpath,mode);
+    return fs::mkdir(fullpath_,mode_);
   }
 
   static
