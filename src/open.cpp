@@ -32,22 +32,22 @@
 
 using std::string;
 using std::vector;
-using mergerfs::Policy;
+using namespace mergerfs;
 
 namespace local
 {
   static
   int
-  open_core(const string *basepath_,
-            const char   *fusepath_,
-            const int     flags_,
-            const bool    link_cow_,
-            uint64_t     &fh_)
+  open_core(const string   *basepath_,
+            const char     *fusepath_,
+            const int       flags_,
+            const bool      link_cow_,
+            fuse_file_info *ffi_)
   {
     int fd;
     string fullpath;
 
-    fs::path::make(basepath_,fusepath_,fullpath);
+    fullpath = fs::path::make(basepath_,fusepath_);
 
     if(link_cow_ && fs::cow::is_eligible(fullpath.c_str(),flags_))
       fs::cow::break_link(fullpath.c_str());
@@ -56,7 +56,9 @@ namespace local
     if(fd == -1)
       return -errno;
 
-    fh_ = reinterpret_cast<uint64_t>(new FileInfo(fd,fusepath_));
+    ffi_->fh = reinterpret_cast<uint64_t>(new FileInfo(fd,fusepath_));
+    //ffi_->keep_cache = true;
+    //ffi_->direct_io  = true;
 
     return 0;
   }
@@ -69,7 +71,7 @@ namespace local
        const char           *fusepath_,
        const int             flags_,
        const bool            link_cow_,
-       uint64_t             &fh_)
+       fuse_file_info       *ffi_)
   {
     int rv;
     vector<const string*> basepaths;
@@ -78,7 +80,7 @@ namespace local
     if(rv == -1)
       return -errno;
 
-    return local::open_core(basepaths[0],fusepath_,flags_,link_cow_,fh_);
+    return local::open_core(basepaths[0],fusepath_,flags_,link_cow_,ffi_);
   }
 }
 
@@ -101,7 +103,7 @@ namespace mergerfs
                          fusepath_,
                          ffi_->flags,
                          config.link_cow,
-                         ffi_->fh);
+                         ffi_);
     }
   }
 }
