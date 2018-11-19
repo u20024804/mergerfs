@@ -39,9 +39,8 @@ namespace local
   static
   int
   open_core(const string   *basepath_,
-            const char     *fusepath_,
-            const int       flags_,
             const bool      link_cow_,
+            const char     *fusepath_,
             fuse_file_info *ffi_)
   {
     int fd;
@@ -49,10 +48,10 @@ namespace local
 
     fullpath = fs::path::make(basepath_,fusepath_);
 
-    if(link_cow_ && fs::cow::is_eligible(fullpath.c_str(),flags_))
+    if(link_cow_ && fs::cow::is_eligible(fullpath.c_str(),ffi_->flags))
       fs::cow::break_link(fullpath.c_str());
 
-    fd = fs::open(fullpath,flags_);
+    fd = fs::open(fullpath,ffi_->flags);
     if(fd == -1)
       return -errno;
 
@@ -68,9 +67,8 @@ namespace local
   open(Policy::Func::Search  searchFunc_,
        const Branches       &branches_,
        const uint64_t        minfreespace_,
-       const char           *fusepath_,
-       const int             flags_,
        const bool            link_cow_,
+       const char           *fusepath_,
        fuse_file_info       *ffi_)
   {
     int rv;
@@ -80,7 +78,7 @@ namespace local
     if(rv == -1)
       return -errno;
 
-    return local::open_core(basepaths[0],fusepath_,flags_,link_cow_,ffi_);
+    return local::open_core(basepaths[0],link_cow_,fusepath_,ffi_);
   }
 }
 
@@ -100,9 +98,8 @@ namespace mergerfs
       return local::open(config.open,
                          config.branches,
                          config.minfreespace,
-                         fusepath_,
-                         ffi_->flags,
                          config.link_cow,
+                         fusepath_,
                          ffi_);
     }
   }
