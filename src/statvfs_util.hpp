@@ -16,9 +16,10 @@
 
 #pragma once
 
-#include <sys/statvfs.h>
-
 #include <string>
+
+#include <stdint.h>
+#include <sys/statvfs.h>
 
 namespace StatVFS
 {
