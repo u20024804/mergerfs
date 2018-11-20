@@ -14,11 +14,12 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
+#include <string>
+
 #include <stdint.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
-
-#include <string>
 
 namespace num
 {
