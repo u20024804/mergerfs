@@ -80,7 +80,7 @@ CXXFLAGS    = $(OPTS) \
               -Wall \
 	      -Wno-unused-result \
               $(FUSE_CFLAGS) \
-              -DFUSE_USE_VERSION=32 \
+              -DFUSE_USE_VERSION=33 \
               -MMD \
 	      -DUSE_XATTR=$(USE_XATTR) \
 	      -DUGID_USE_RWLOCK=$(UGID_USE_RWLOCK)
