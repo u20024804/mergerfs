@@ -42,8 +42,8 @@ INTERNAL_FUSE = 1
 EXTERNAL_FUSE_MIN_REQ = 3.3.0
 
 ifeq ($(INTERNAL_FUSE),1)
-FUSE_CFLAGS = -D_FILE_OFFSET_BITS=64 -Ilibfuse3/include
-FUSE_LIBS   = libfuse3/obj/libfuse3.a
+FUSE_CFLAGS = -D_FILE_OFFSET_BITS=64 -Ilibfuse/include
+FUSE_LIBS   = libfuse/obj/libfuse.a
 FUSE_TARGET = $(FUSE_LIBS)
 else
 FUSE_CFLAGS := $(shell $(PKGCONFIG) --cflags 'fuse >= $(EXTERNAL_FUSE_MIN_REQ)')
@@ -143,12 +143,12 @@ clean: rpm-clean
 	$(RM) -f "$(TARGET)" mount.mergerfs
 	$(FIND) . -name "*~" -delete
 ifeq ($(INTERNAL_FUSE),1)
-	cd libfuse3 && $(MAKE) clean
+	cd libfuse && $(MAKE) clean
 endif
 
 distclean: clean
 ifeq ($(INTERNAL_FUSE),1)
-	cd libfuse3 && $(MAKE) distclean
+	cd libfuse && $(MAKE) distclean
 endif
 ifeq ($(GIT_REPO),1)
 	$(GIT) clean -fd
@@ -238,8 +238,8 @@ install-build-pkgs:
 unexport CFLAGS
 .PHONY:
 
-libfuse3/obj/libfuse3.a:
-	cd libfuse3 && $(MAKE)
+libfuse/obj/libfuse.a:
+	cd libfuse && $(MAKE)
 
 .PHONY: all clean install help version
 

@@ -1,0 +1,3 @@
+[submodule "libfuse"]
+	path = libfuse
+	url = http://github.com/trapexit/libfuse
