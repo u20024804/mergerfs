@@ -5,6 +5,11 @@
 #include <stdint.h>
 #include <string.h>
 
+typedef uint32_t khint32_t;
+typedef uint64_t khint64_t;
+typedef uint32_t khint_t;
+typedef khint_t khiter_t;
+
 static const double HASH_UPPER = 0.77;
 
 static
@@ -13,6 +18,15 @@ uint64_t
 FLAGS_SIZE(const uint64_t m_)
 {
   return ((m_ < 16) ? 1 : (m_ >> 4));
+}
+
+static
+inline
+khint32_t
+ISEITHER(const std::vector<khint32_t> &flags_,
+         const uint64_t                i_)
+{
+  return ((flags_[i_>>4] >> ((i_ & 0xFU) << 1)) & 3);
 }
 
 static
@@ -34,12 +48,6 @@ ROUNDUP32(uint32_t x)
 template<typename KEY,typename VALUE>
 class KHash
 {
-public:
-  typedef uint32_t khint32_t;
-  typedef uint64_t khint64_t;
-  typedef uint32_t khint_t;
-  typedef khint_t khiter_t;
-
 public:
   KHash();
   ~KHash();
@@ -78,7 +86,7 @@ KHash<KEY,VALUE>::~KHash()
 }
 
 template<typename KEY, typename VALUE>
-typename KHash<KEY,VALUE>::khiter_t
+khiter_t
 KHash<KEY,VALUE>::put(KEY &key_,
                       int *rv_)
 {
@@ -86,7 +94,7 @@ KHash<KEY,VALUE>::put(KEY &key_,
 }
 
 template<typename KEY, typename VALUE>
-typename KHash<KEY,VALUE>::khiter_t
+khiter_t
 KHash<KEY,VALUE>::get(const KEY &key_) const
 {
   return 0;
@@ -132,8 +140,14 @@ KHash<KEY,VALUE>::resize(const khint_t new_n_buckets_)
 
   if(rehash)
     {
-      
+      for(int i = 0; i != _n_buckets; i++)
+        {
+          if(ISEITHER(_flags,i) == 0)
+            {
+
+            }
+        }
     }
-  
+
   return 0;
 }
