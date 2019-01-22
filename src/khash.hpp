@@ -106,11 +106,11 @@ template<typename KEY, typename VALUE>
 int
 KHash<KEY,VALUE>::resize(const khint_t new_n_buckets_)
 {
-  khint_t j;
+  bool rehash;
   khint_t new_n_buckets;
   khint32_t *new_flags;
 
-  j = 1;
+  rehash = true;
   new_flags = NULL;
   new_n_buckets = ROUNDUP32(new_n_buckets_);
   if(new_n_buckets_ < 4)
@@ -118,7 +118,7 @@ KHash<KEY,VALUE>::resize(const khint_t new_n_buckets_)
 
   if(_size >= (khint_t)(new_n_buckets_ * HASH_UPPER + 0.5))
     {
-      j = 0;
+      rehash = false;
     }
   else
     {
@@ -130,5 +130,10 @@ KHash<KEY,VALUE>::resize(const khint_t new_n_buckets_)
         }
     }
 
+  if(rehash)
+    {
+      
+    }
+  
   return 0;
 }
