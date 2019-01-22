@@ -29,6 +29,8 @@
 #include <string>
 #include <vector>
 
+#include "khash.hpp"
+
 using std::string;
 using std::vector;
 
